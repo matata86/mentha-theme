@@ -25,3 +25,4 @@ __pycache__/
 !/upstream/Orchis-theme/src/_sass/
 !/upstream/Orchis-theme/src/gtk/
 !/upstream/Orchis-theme/src/gtk-2.0/
+/dist-spices/
