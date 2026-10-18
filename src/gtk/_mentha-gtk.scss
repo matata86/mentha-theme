@@ -1965,8 +1965,8 @@ notebook > header > tabs > tab:checked.reorderable-page { background-color: mt(s
 
     &:hover { background-color: mt(hover); }
     // outline GTK3 kreslí jen při klávesnicovém fokusu (výchozí tlačítko po otevření bez prstence)
-    // fokus = jen akcentový rámeček tlačítka (bez druhého outline uvnitř, který dělal dvojitý tlustý prstenec)
-    &:focus { box-shadow: inset 0 0 0 1px mt(focus), 0 0 0 1px mt(focus); outline: none; }
+    // fokus = tentýž 1px rámeček v barvě fokusu: tlačítko nesmí nabýt na velikosti ani tloušťce oproti sousedovi
+    &:focus { box-shadow: inset 0 0 0 1px mt(focus); outline: none; }
   }
   messagedialog.csd .dialog-action-box button:not(:last-child) { margin-right: 8px; }
 
