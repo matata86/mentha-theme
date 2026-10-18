@@ -977,8 +977,10 @@ def dialog_page(kind):
             d.set_use_alpha(True)
         d.show()
         if kind == "dlg-message-focus":
-            d.set_focus_visible(True)
-            d.get_widget_for_response(Gtk.ResponseType.CANCEL).grab_focus()
+            # jako Nemo (eel): výchozí odpověď Zrušit + viditelný klávesnicový fokus na ní
+            d.set_default_response(Gtk.ResponseType.CANCEL)
+            GLib.timeout_add(500, lambda: (d.get_widget_for_response(Gtk.ResponseType.CANCEL).grab_focus(), d.set_focus_visible(True), False)[2])
+            return False
         # F5 je klávesa, GTK3 by dialogu zapnul viditelný fokus; snímek má odpovídat otevření myší
         # puštění F5 (key-release) zapne focus-visible znovu: potlačit i po zpoždění
         # focus-in okna (Broadway) zapne focus-visible i později: opakovat do snímku
