@@ -1,0 +1,2082 @@
+// =============================================================================
+// Mentha: vrstva nad Orchisem (GTK3 i GTK4). Kompiluje se per varianta, barvy
+// jen z tokenů přes mt(). Vyžaduje $variant, $gtk (3|4), Orchisovy proměnné.
+// Pravidla: gradient jen na level/progress/scale; focus = accent; akcent
+// se nikdy nepíše natvrdo. Font se nenutí (Inter z nastavení systému).
+// =============================================================================
+
+$mt-ring-focus:       inset 0 0 0 2px mt(focus);        // uvnitř prvku (entry, ploché tlačítko)
+$mt-ring-focus-outer: 0 0 0 2px mt(focus);              // vně (plné prvky, switch, check)
+$mt-ring-border:      inset 0 0 0 1px mt(control_border);   // hrana ovládacích prvků v klidu (hairline oddělovače zůstávají mt(border))
+$mt-ring-field:       inset 0 0 0 1px mt(border_strong);    // hrana textových polí >= 3:1 (WCAG 1.4.11)
+$mt-text-sel:         mix(mt(accent), mt(surface), 33%);    // vybraný text v label/textview a v EelEditableLabel
+$mt-text-sel-entry:   mix(mt(accent), mt(surface_alt), 34%); // vybraný text v entry (podklad surface_alt; validace 1,5:1 + fg 4,5:1)
+@mixin mt-ol($r) { @if $gtk == 3 { -gtk-outline-radius: $r; } }   // GTK4 outline sleduje border-radius
+$mt-outline:          2px solid mt(focus);
+$mt-sidebar-hover:    mt(sidebar_hover);                  // hover v sidebarech: neutrální, zřetelně slabší než výběr (kontrola v gtk-validate)                   // klávesnicový fokus: GTK3 kreslí outline jen při viditelném fokusu (ne po kliknutí myší)
+
+// -----------------------------------------------------------------------------
+// Headerbar: splývá s obsahem, bez čáry
+// -----------------------------------------------------------------------------
+headerbar,
+.titlebar {
+  background-color: mt(surface);
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  color: mt(fg);
+
+  &:backdrop {
+    background-color: mt(surface);
+    color: mt(fg_muted);
+
+    label { color: mt(fg_muted); }
+  }
+
+  .title { font-weight: 600; }
+  .subtitle { color: mt(fg_muted); font-size: smaller; }
+}
+
+// Podpisová čárka 24x2 u hlavičky okna je zrušená: dialogy předvoleb Nema a terminálu jsou
+// obyčejné GtkWindow (uzel window.csd, ne dialog), takže je od hlavních oken nejde odlišit.
+
+// Společné tlačítko titulku: čtverec 28x28 radius 9, bez pozadí v klidu
+%mt-titlebutton {
+  min-width: 28px;
+  min-height: 28px;
+  margin: 0 2px;                // mezera mezi tlačítky 4 px
+  padding: 0;
+  border: none;
+  border-image: none;
+  border-radius: 9px;
+  box-shadow: none;
+  background-image: none;
+  background-color: transparent;
+  color: mt(fg_muted);
+  animation: none;
+  outline: none;
+
+  &:hover {
+    background-color: mt(surface_alt);
+    background-image: none;
+    box-shadow: none;
+    color: mt(fg);
+  }
+
+  &:active, &:checked {
+    background-color: mt(border);
+    background-image: none;
+    box-shadow: none;
+    animation: none;
+    color: mt(fg);
+  }
+
+  &:disabled { color: mt(fg_disabled); }
+
+  &:backdrop { opacity: 0.5; }
+
+  &.close:hover {
+    background-color: mt(error);
+    color: mt(error_fg);
+  }
+
+  &.close:active {
+    background-color: mt(error_pressed);
+    color: mt(error_fg);
+  }
+
+}
+
+@if $gtk == 3 {
+  // Jedna váha glyfů _ □ × (Papirus je kreslí různě tlustě): vlastní SVG s obsahem 10x10 a tahem 1,5
+  // jako pozadí uzlu image, původní ikona se schová. Barva se dědí z tlačítka (fg_muted, hover fg).
+  button.titlebutton.minimize > image,
+  button.titlebutton.maximize > image,
+  button.titlebutton.close > image {
+    -gtk-icon-transform: scale(0);
+    min-width: 16px;
+    min-height: 16px;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 16px 16px;
+  }
+  button.titlebutton.minimize > image { background-image: -gtk-recolor(url("assets/mentha-win-minimize-symbolic.svg")); }
+  button.titlebutton.maximize > image { background-image: -gtk-recolor(url("assets/mentha-win-maximize-symbolic.svg")); }
+  .maximized button.titlebutton.maximize > image,
+  .tiled button.titlebutton.maximize > image { background-image: -gtk-recolor(url("assets/mentha-win-restore-symbolic.svg")); }
+  button.titlebutton.close > image { background-image: -gtk-recolor(url("assets/mentha-win-close-symbolic.svg")); }
+}
+
+@if $gtk == 3 {
+  // CSD (a GTK-kreslené SSD tam, kde existuje). Pozor: Muffin 6 kreslí SSD rámy z
+  // metacity-1/metacity-theme-3.xml tématu 'Window borders'; pravidla window.ssd
+  // se v Muffinu neuplatní, dokud takový part (metacity-1) neexistuje.
+  headerbar button.titlebutton:not(.suggested-action):not(.destructive-action),
+  .titlebar button.titlebutton:not(.suggested-action):not(.destructive-action),
+  window.ssd headerbar.titlebar button.titlebutton,
+  window.ssd .titlebar button.titlebutton {
+    @extend %mt-titlebutton;
+  }
+
+  // SSD titulek: nižší (36 px), horní radius 12
+  window.ssd headerbar.titlebar,
+  window.ssd .titlebar,
+  headerbar.titlebar.default-decoration,
+  .titlebar.default-decoration {
+    min-height: 36px;
+    padding: 0 6px;
+    border-radius: mt-radius(md) mt-radius(md) 0 0;
+    box-shadow: none;
+  }
+
+  .maximized headerbar.titlebar,
+  .maximized .titlebar,
+  .tiled headerbar.titlebar,
+  .fullscreen headerbar.titlebar { border-radius: 0; }
+} @else {
+  headerbar windowcontrols {
+    border-spacing: 0;
+
+    button:not(.suggested-action):not(.destructive-action) {
+      @extend %mt-titlebutton;
+
+      > image {
+        -gtk-icon-size: 14px;
+        min-width: 14px;
+        min-height: 14px;
+        background: none;
+        box-shadow: none;
+      }
+    }
+  }
+}
+
+
+// -----------------------------------------------------------------------------
+// Tlačítka: 34 px, radius 10, ploché s rámečkem
+// Jazyk stavů: :checked = accent_soft + accent_text, bez rámečku a přechodu;
+// plná modrá jen suggested-action.
+// -----------------------------------------------------------------------------
+button {
+  background-color: transparent;
+  background-image: none;
+  box-shadow: $mt-ring-border;
+  color: mt(fg);
+
+  &:hover {
+    background-color: mt(hover);
+    box-shadow: $mt-ring-border;
+  }
+
+  // fokus: klidový rámeček + outline, který GTK3 kreslí jen při klávesnicové navigaci (po kliknutí myší ne)
+  &:focus {
+    box-shadow: $mt-ring-border;
+    outline: $mt-outline;
+    outline-offset: -2px;
+    @include mt-ol(mt-radius(sm));
+  }
+
+  &:active {
+    animation: none;
+    background-image: none;
+    background-color: mt(active);
+    box-shadow: $mt-ring-border;
+  }
+
+  &:disabled {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 1px mt(hairline);
+    color: mt(fg_disabled);
+  }
+
+  &:checked {
+    background-color: mt(accent_soft);
+    box-shadow: none;
+    color: mt(accent_text);
+  }
+  &:checked:hover { background-color: mt(accent_soft_hover); }
+
+  &:checked:disabled {
+    background-color: mt(hover);
+    box-shadow: none;
+    color: mt(fg_disabled);
+  }
+}
+
+// zapnutý segment v .linked drží obrys skupiny (jinak se hrana přeruší). Nízká specificita (0,2,1)
+// a pořadí před plochými tlačítky: ploché toggly v headerbaru/toolbaru zůstávají bez rámu, pathbar má vlastní pravidla
+.linked > button:checked, .linked > button:checked:hover { box-shadow: $mt-ring-border; }
+// zapnutý toggle v GtkButtonBox (expand => .linked; vzorníky barev a karty režimu v Nastavení > Motivy):
+// vnitřní prstenec akcentu, samotná výplň accent_soft má vůči vypnutému < 3:1. Ikonu dávají jako
+// dítě přes add(), takže nemají .image-button; headerbar, toolbar Nema a pathbar jsou GtkBox (nedotčeno).
+buttonbox.linked:not(.vertical) > button.toggle:checked,
+buttonbox.linked:not(.vertical) > button.toggle:checked:hover { box-shadow: inset 0 0 0 2px mt(accent); }
+// soused za vybraným segmentem nekreslí levou hranu, jinak 1px spoj překryje pravý okraj 2px akcentového rámu (margin -1 ho zasouvá pod souseda)
+buttonbox.linked:not(.vertical) > button.toggle:checked + button:not(:checked),
+buttonbox.linked:not(.vertical) > button.toggle:checked + button:not(:checked):hover {
+  box-shadow: inset 0 1px 0 0 mt(control_border), inset 0 -1px 0 0 mt(control_border), inset -1px 0 0 0 mt(control_border);
+}
+
+// váha textu tlačítek 600 podle makety (.btn), stejně jako GTK4/libadwaita; výjimky, kde je
+// tlačítko spíš položkou (neaktivní drobek, záhlaví sloupce, statusbar, karta, kalendář), zůstávají 400.
+// Ne holé `button`: Nemo měří drobky přes umělou cestu jen s GtkButton a dostal by 600
+window button, .background button, popover button { font-weight: 600; }
+.path-bar.linked:not(.vertical) > button.toggle:not(:checked),
+treeview.view header button,
+.nemo-window statusbar button,
+window statusbar button, .background statusbar button,
+notebook > header > tabs > tab button,
+button.combo,
+button.link,
+fontbutton > button, button.font, appchooserbutton > button,
+calendar.button { font-weight: 400; }
+
+// ploché tlačítko (toolbary, headerbar): bez rámečku, radius 10
+button.flat,
+headerbar button:not(.titlebutton),
+.titlebar button:not(.titlebutton),
+.toolbar button,
+.path-bar button {
+  box-shadow: none;
+  border-radius: mt-radius(sm);
+
+  &:hover { background-color: mt(hover); box-shadow: none; }
+  &:focus { box-shadow: none; outline: $mt-outline; outline-offset: -2px; @include mt-ol(mt-radius(sm)); }
+  &:active { background-color: mt(active); box-shadow: none; }
+  &:disabled { background-color: transparent; box-shadow: none; }
+  &:checked {
+    background-color: mt(accent_soft);
+    box-shadow: none;
+    color: mt(accent_text);
+  }
+  &:checked:hover { background-color: mt(accent_soft_hover); }
+}
+
+// ploché textové tlačítko v klidu běžnou barvou (Orchis ho tlumí jako disabled); ikonová beze změny
+// GtkLinkButton (.flat.link) vynechán, jinak by přebil barvu odkazu
+button.flat.text-button:not(.link):not(:disabled):not(:checked),
+button.flat:not(.image-button):not(.link):not(:disabled):not(:checked) { color: mt(fg); }
+
+// Orchis přebíjí ploché tlačítko vlastními pravidly (0,4,1): stejné selektory,
+// pozdější pořadí. Hover i checked jsou tokeny, žádný alpha(currentColor).
+$mt-bar-buttons: unquote(".nemo-window .primary-toolbar :not(.path-bar) > button:not(.text-button), .nemo-window .toolbar button, .nemo-window statusbar button, .titlebar button:not(.suggested-action):not(.destructive-action), headerbar button.toggle, toolbar button, .inline-toolbar button");
+
+#{$mt-bar-buttons} {
+  background-image: none;
+
+  &:hover {
+    background-color: mt(hover);
+    box-shadow: none;
+    color: mt(fg);
+  }
+  &:checked {
+    background-color: mt(accent_soft);
+    background-image: none;
+    box-shadow: none;
+    color: mt(accent_text);
+  }
+  &:checked:hover {
+    background-color: mt(accent_soft_hover);
+    box-shadow: none;
+    color: mt(accent_text);
+  }
+}
+
+.titlebar button.toggle { border-radius: mt-radius(sm); }
+
+// Linked skupiny: radius jen na vnějších rozích, uvnitř spoj bez zaoblení. Orchis dává
+// v titlebaru/Nemo toolbaru pilulku (0,6,1) a flat image-buttonům kruh, proto selektory s
+// navíc :not(), které přebijí specificitou. Pathbar (.path-bar) má vlastní pilulky.
+@mixin mt-linked-h($r: mt-radius(sm)) {
+  border-radius: 0;
+  &:first-child { border-radius: $r 0 0 $r; }
+  &:last-child { border-radius: 0 $r $r 0; }
+  &:only-child { border-radius: $r; }
+}
+@mixin mt-linked-v($r: mt-radius(sm)) {
+  border-radius: 0;
+  &:first-child { border-radius: $r $r 0 0; }
+  &:last-child { border-radius: 0 0 $r $r; }
+  &:only-child { border-radius: $r; }
+}
+.linked:not(.vertical):not(.path-bar):not(stackswitcher) > button:not(.suggested-action):not(.destructive-action):not(.text-button),
+.titlebar .linked:not(.vertical):not(.path-bar):not(stackswitcher) > button:not(.suggested-action):not(.destructive-action),
+.nemo-window .primary-toolbar .linked:not(.vertical):not(.path-bar):not(stackswitcher) > button:not(.text-button) {
+  @include mt-linked-h;
+}
+// spoj segmentů 1 px (stejně jako vnější obrys): následující segment překryje pravý obrys předchozího.
+// Ploché skupiny v toolbarech a headerbaru obrys nemají, tam se nic neposouvá.
+.linked:not(.vertical):not(.path-bar):not(stackswitcher) > button:not(:first-child):not(.suggested-action):not(.destructive-action):not(.combo) { margin-left: -1px; }
+headerbar .linked:not(.vertical):not(.path-bar):not(stackswitcher) > button:not(:first-child):not(.suggested-action):not(.destructive-action):not(.combo),
+.titlebar .linked:not(.vertical):not(.path-bar):not(stackswitcher) > button:not(:first-child):not(.suggested-action):not(.destructive-action):not(.combo),
+.toolbar .linked:not(.vertical):not(.path-bar):not(stackswitcher) > button:not(:first-child):not(.suggested-action):not(.destructive-action):not(.combo),
+.primary-toolbar .linked:not(.vertical):not(.path-bar):not(stackswitcher) > button:not(:first-child):not(.suggested-action):not(.destructive-action):not(.combo) { margin-left: 0; }
+// combobox s entry: dropdown tlačítko uvnitř pole je samostatné, vlastní tvar z Orchisu
+combobox > .linked:not(.vertical):not(.path-bar):not(stackswitcher) > button:not(:only-child):not(.text-button):not(.suggested-action):not(.destructive-action) {
+  border-radius: mt-radius(xs);
+}
+.linked.vertical > button:not(.suggested-action):not(.destructive-action):not(.text-button) {
+  @include mt-linked-v;
+}
+
+// jedna výška ovladačů v headerbaru 36 px: segmentový přepínač (34 px tlačítka + 1 px kolem), toggly
+// i textová tlačítka titulku (Zrušit/Hotovo)
+headerbar stackswitcher, .titlebar stackswitcher { padding: 1px; }
+headerbar > button.text-button, headerbar :not(stackswitcher) > button.text-button, .titlebar :not(stackswitcher) > button.text-button { min-height: 36px; padding-top: 0; padding-bottom: 0; }
+
+// ikonová tlačítka v headerbaru 32 px (mockup .ib), ne kruhy
+headerbar button.image-button:not(.titlebutton),
+.titlebar button.image-button:not(.titlebutton) {
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  margin-top: 7px;
+  margin-bottom: 7px;
+  border-radius: mt-radius(sm);
+}
+
+// plné primární a destruktivní tlačítko, BEZ přechodu; focus = vnější 2px prstenec
+// s mezerou (outline-offset), aby se neslil s výplní stejné barvy
+button.suggested-action,
+headerbar button.suggested-action,
+.titlebar button.suggested-action {
+  background-image: none;
+  background-color: mt(accent);
+  border-image: none;
+  box-shadow: none;
+  color: mt(accent_fg);
+
+  &:hover { background-color: mt(accent_hover); box-shadow: none; }
+  &:focus { box-shadow: none; outline: $mt-outline; outline-offset: 2px; @include mt-ol(mt-radius(md)); }
+  &:active, &:checked {
+    animation: none;
+    background-image: none;
+    background-color: mt(accent_pressed);
+    box-shadow: none;
+  }
+  &:disabled {
+    background-color: mt(hover);
+    box-shadow: none;
+    outline: none;
+    color: mt(fg_disabled);
+  }
+}
+
+button.destructive-action,
+headerbar button.destructive-action,
+.titlebar button.destructive-action {
+  background-image: none;
+  background-color: mt(error);
+  border-image: none;
+  box-shadow: none;
+  color: mt(error_fg);
+
+  &:hover { background-color: mt(error_hover); box-shadow: none; }
+  &:focus { box-shadow: none; outline: $mt-outline; outline-offset: 2px; @include mt-ol(mt-radius(md)); }
+  &:active, &:checked {
+    animation: none;
+    background-image: none;
+    background-color: mt(error_pressed);
+    box-shadow: none;
+  }
+  &:disabled {
+    background-color: mt(hover);
+    box-shadow: none;
+    outline: none;
+    color: mt(fg_disabled);
+  }
+}
+
+// odkaz-tlačítko: žádné pozadí, jen barva
+button.link {
+  background-color: transparent;
+  box-shadow: none;
+
+  &:hover, &:active { background-color: transparent; background-image: none; box-shadow: none; }
+  &:hover label, &:active label { color: mt(accent_pressed); }
+  &:focus { box-shadow: none; outline: $mt-outline; outline-offset: 0; @include mt-ol(mt-radius(xs)); border-radius: mt-radius(xs); }
+}
+
+// combobox bez entry se chová jako tlačítko (Orchis ho kreslí šedou výplní). Výška 34 px jako entry:
+// GTK3 min-height platí pro content box, takže 24 + 2x5 padding.
+// :only-child vylučuje toggle comboboxu s entry (entry + button.combo), ten má vlastní tvar níž
+$mt-combo: unquote("button.combo:only-child, .linked > button.combo:only-child, combobox > box.linked > button.combo:only-child");
+// Orchis pravidla s vyšší specificitou (actionbar, filtr file chooseru, cinnamon-settings) přebíjejí
+// výplň; zesílený selektor jim ji bere zpět, aby combo vypadalo všude stejně
+$mt-combo-strong: unquote("combobox > box > button.combo:only-child:not(.suggested-action):not(.destructive-action), actionbar > revealer > box combobox > box > button.combo:only-child:not(.suggested-action):not(.destructive-action), button.combo:not(.suggested-action):not(.destructive-action):only-child");
+
+#{$mt-combo} {
+  background-color: mt(surface);
+  background-image: none;
+  box-shadow: $mt-ring-border;
+  min-height: 24px;
+  padding: 5px 10px;
+  color: mt(fg);
+  font-size: inherit;
+
+  &:hover { background-color: mt(hover); box-shadow: $mt-ring-border; }
+  &:focus { box-shadow: $mt-ring-border; outline: $mt-outline; outline-offset: -2px; @include mt-ol(mt-radius(sm)); }
+  &:checked { background-color: mt(active); box-shadow: $mt-ring-border; color: mt(fg); }
+  &:disabled { background-color: transparent; box-shadow: inset 0 0 0 1px mt(hairline); color: mt(fg_disabled); }
+}
+#{$mt-combo-strong} {
+  background-color: mt(surface);
+  background-image: none;
+  box-shadow: $mt-ring-border;
+  color: mt(fg);
+  font-size: inherit;
+
+  &:hover { background-color: mt(hover); }
+  &:checked { background-color: mt(active); }
+  &:disabled { background-color: transparent; box-shadow: inset 0 0 0 1px mt(hairline); color: mt(fg_disabled); }
+}
+@if $gtk == 3 {
+  // mezera text-chevron 8 px (GTK3 nemá border-spacing)
+  combobox > box > button.combo:only-child arrow, button.combo:only-child > box > arrow { margin-left: 8px; }
+}
+// combobox s entry: tlačítko ⌄ leží uvnitř pole (Orchis ho překrývá -34 px), bez vlastní výplně a obrysu
+combobox > box.linked > entry.combo + button.combo {
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  border-radius: mt-radius(xs);
+
+  &:hover { background-color: mt(hover); box-shadow: none; }
+  &:checked { background-color: mt(active); box-shadow: none; }
+  &:disabled { background-color: transparent; box-shadow: none; }
+}
+combobox > box.linked > entry.combo + button.combo arrow { margin-left: 0; color: mt(fg_muted); }
+
+@if $gtk == 3 {
+  // ikonová tlačítka mimo headerbar/toolbary: čtverec 34 px, radius sm
+  button.image-button:not(.circular):not(.titlebutton):not(.flat) {
+    min-width: 34px;
+    min-height: 34px;
+    padding: 0;
+  }
+  :not(.linked) > button.image-button:not(.circular):not(.titlebutton):not(.flat) { border-radius: mt-radius(sm); }
+
+  // spinbutton: plusko/minus s border 5px = 34 px výšky (Orchis má 6px => 36)
+  spinbutton:not(.vertical) button,
+  spinbutton.vertical button {
+    border-width: 5px;
+    min-height: 24px;
+    min-width: 24px;
+    border-radius: mt-radius(xs);
+    box-shadow: none;
+    background-clip: padding-box;
+
+    &:hover { background-color: mt(hover); }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Entry: surface_alt, 1 px okraj, hover tmavší okraj, 2 px focus kroužek
+// -----------------------------------------------------------------------------
+entry,
+spinbutton:not(.vertical),
+spinbutton.vertical {
+  background-color: mt(surface_alt);
+  background-image: none;
+  box-shadow: $mt-ring-field;
+  color: mt(fg);
+  caret-color: mt(fg);
+
+  &:hover { background-color: mt(surface_alt); box-shadow: inset 0 0 0 1px mt(fg_muted); }
+  &:focus { background-color: mt(surface_alt); box-shadow: $mt-ring-focus; }
+  &:disabled {
+    background-color: mt(surface_alt);
+    box-shadow: inset 0 0 0 1px mt(hairline);
+    color: mt(fg_disabled);
+  }
+
+  // GTK3 needitovatelný entry vlastní selektor nemá (třída .read-only tam neexistuje); GTK4 4.14 nezná pseudotřídu :read-only
+  @if $gtk == 4 {
+    &.read-only { background-color: transparent; box-shadow: inset 0 0 0 1px mt(hairline); }
+  }
+
+  // výplň drží surface_alt i v error/warning (Orchis ji jinak míchá do neutrální šedé), stav nese jen obrys
+  &.error   { background-color: mt(surface_alt); box-shadow: inset 0 0 0 2px mt(error); }
+  &.warning { background-color: mt(surface_alt); box-shadow: inset 0 0 0 2px mt(warning_text); }
+  // disabled error/warning vypadá jako ostatní disabled entry (ne červeně/oranžově)
+  &.error:disabled, &.warning:disabled {
+    background-color: mt(surface_alt);
+    box-shadow: inset 0 0 0 1px mt(hairline);
+    color: mt(fg_disabled);
+  }
+
+  // podklad entry je surface_alt: výběr se míchá na něm, jinak mizí
+  selection, text selection { background-color: $mt-text-sel-entry; color: mt(fg); }
+}
+// vypnuté pole: placeholder, ikony a šipky comba tlumené stejně jako text
+entry:disabled placeholder,
+entry:disabled image,
+combobox:disabled arrow,
+button:disabled arrow { color: mt(fg_disabled); }
+
+// vyhledávací pilulka v headerbaru / toolbaru: bez okraje (mockup); Nemo hledání je GtkInfoBar
+// (tvar a výšku drží .nemo-window .linked > entry níž)
+headerbar entry,
+.titlebar entry,
+.primary-toolbar entry,
+searchbar entry,
+.nemo-window infobar entry {
+  border-radius: mt-radius(pill);
+  background-color: mt(surface_alt);
+  box-shadow: none;
+  color: mt(fg);
+  padding-left: 12px;
+  padding-right: 12px;
+
+  &:hover { background-color: mt(surface_alt); box-shadow: none; }
+  &:focus { background-color: mt(surface); box-shadow: $mt-ring-focus; }
+}
+// pole hledání Nema leží na ploše okna (ne v liště): samotná výplň má proti ploše ~1,1:1 a v Dark mizí -> jemná hrana
+.nemo-window infobar entry:not(:focus) { box-shadow: inset 0 0 0 1px mt(border); }
+// Nemo nastaví primary-icon-activatable/-sensitive bez ikony (nemo-search-bar.glade ř. 64-65), GtkEntry tím
+// založí prázdný uzel image.left a Orchisův margin 1 + 6 px posune text: text 12 px od hrany jako location entry
+.nemo-window infobar entry image.left { margin: 0; }
+
+// postup uvnitř entry: 3px pruh u spodního okraje; node zabírá celou výšku pole, proto se
+// pruh kreslí přes background-size (min-height/margin by z něj udělaly oválnou skvrnu přes text)
+@if $gtk == 3 {
+  entry progress {
+    margin: 0 6px;
+    min-height: 0;
+    border: none;
+    border-radius: 0;
+    background-color: transparent;
+    background-image: linear-gradient(to right, mt(grad_from), mt(grad_to));
+    background-repeat: no-repeat;
+    background-position: left bottom;
+    background-size: 100% 3px;
+    box-shadow: none;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Switch 44x24: vypnuto switch_off (Light světlá dráha), zapnuto plný akcent, jezdec bílý; na zapnuté dráze accent_fg
+// (Light bílý 4,53:1, Dark tmavý 7,1:1; bílý na světlém akcentu Dark měl 2,43:1)
+// -----------------------------------------------------------------------------
+switch {
+  min-width: 44px;
+  min-height: 24px;
+  margin: 4px 0;
+  padding: 0;
+  border: none;
+  border-radius: mt-radius(pill);
+  background-color: mt(switch_off);
+  background-image: none;
+  box-shadow: none;
+  outline: none;
+  font-size: 0;
+
+  &:hover:not(:checked) { background-color: mt(switch_off_hover); }
+  &:checked { background-color: mt(accent); }
+  &:checked:hover { background-color: mt(accent_hover); }
+  // disabled jako scale: plné tokeny místo opacity (opacity ztlumí dráhu i jezdec naráz, CTRL-703)
+  // opacity: 1 přebije upstream Orchis (switch:disabled { opacity: 0.5 }); vypnutý = půl cesty k ploše, jezdec zůstane vidět
+  &:disabled { opacity: 1; background-color: mix(mt(switch_off), mt(surface), 55%); }
+  &:checked:disabled { background-color: mt(fg_disabled); }
+  &:disabled slider { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); }
+  // Dark: bílý jezdec by na ztlumené dráze svítil víc než aktivní prvek
+  @if $variant == 'dark' { &:disabled slider, &:checked:disabled slider { background-color: mt(fg_muted); } }
+
+  slider {
+    min-width: 18px;
+    min-height: 18px;
+    margin: 3px;
+    border: none;
+    border-radius: 50%;
+    background-color: mt(switch_knob);   // vypnutý jezdec je vždy bílý (spec), zapnutý viz níž
+    background-image: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    color: mt(fg);
+  }
+
+  &:hover slider, &:focus slider, &:focus:hover slider {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  &:checked slider {
+    background-color: mt(accent_fg);
+    color: mt(fg);
+  }
+
+  // fokus: GtkSwitch (3.24) outline nekreslí (render vrací FALSE), proto prstenec box-shadow 2 px
+  // s mezerou 2 px barvy surface (GTK3 vrství stíny obráceně: první v seznamu je dole). Klik myší switch nefokusuje (ověřeno), takže je to fokus jen z klávesnice.
+  @if $gtk == 3 {
+    &:focus, &:checked:focus { box-shadow: 0 0 0 4px mt(focus), 0 0 0 2px mt(surface); outline: none; }
+  } @else {
+    &:focus-visible { box-shadow: none; outline: $mt-outline; outline-offset: 2px; }
+  }
+}
+
+@if $gtk == 3 {
+  // ---------------------------------------------------------------------------
+  // Check = zaoblený čtverec (CSS), radio = kruh (SVG); bez Material ripple hala
+  // ---------------------------------------------------------------------------
+  check, radio {
+    min-width: 18px;
+    min-height: 18px;
+    margin: 0;
+    padding: 0;
+    background-image: none;
+    animation: none;
+    transition: none;
+    box-shadow: none;
+    outline: none;
+
+    &:hover, &:active, &:focus, &:checked, &:indeterminate, &:disabled { background-image: none; }
+  }
+
+  check {
+    -gtk-icon-source: none;
+    border-radius: 5px;
+    background-color: transparent;
+    box-shadow: inset 0 0 0 2px mt(fg_muted);
+    color: mt(accent_fg);
+
+    &:hover { box-shadow: inset 0 0 0 2px mt(fg); }
+    &:active { background-color: mt(accent_soft); box-shadow: inset 0 0 0 2px mt(accent); }
+
+    &:checked, &:indeterminate {
+      background-color: mt(accent);
+      box-shadow: none;
+      color: mt(accent_fg);
+    }
+    &:checked { -gtk-icon-source: -gtk-recolor(url("assets/mentha-check-symbolic.svg")); }
+    &:indeterminate { -gtk-icon-source: -gtk-recolor(url("assets/mentha-dash-symbolic.svg")); }
+    &:checked:hover, &:indeterminate:hover { background-color: mt(accent_hover); box-shadow: none; }
+    &:checked:active, &:indeterminate:active { background-color: mt(accent_pressed); }
+
+    &:disabled { box-shadow: inset 0 0 0 2px mt(fg_disabled); background-color: transparent; }
+    &:checked:disabled, &:indeterminate:disabled { background-color: mt(fg_disabled); box-shadow: none; color: mt(accent_fg); }
+  }
+
+  radio {
+    border-radius: 50%;
+    background-color: transparent;
+    -gtk-icon-source: -gtk-recolor(url("assets/mentha-radio-symbolic.svg"));
+    color: mt(fg_muted);
+
+    &:hover { color: mt(fg); }
+    &:active { background-color: mt(active); color: mt(fg); }
+    // vybrané radio = plný akcentový kruh s tečkou accent_fg, stejná váha jako zaškrtnutý check
+    // (dřív jen 2px kroužek na průhledném podkladu); stavy hover/active jako u checku
+    &:checked, &:indeterminate { background-color: mt(accent); color: mt(accent_fg); }
+    &:checked { -gtk-icon-source: -gtk-recolor(url("assets/mentha-radio-dot-symbolic.svg")); }
+    &:indeterminate { -gtk-icon-source: -gtk-recolor(url("assets/mentha-dash-symbolic.svg")); }
+    &:checked:hover, &:indeterminate:hover { background-color: mt(accent_hover); color: mt(accent_fg); }
+    &:checked:active, &:indeterminate:active { background-color: mt(accent_pressed); color: mt(accent_fg); }
+    &:disabled { color: mt(fg_disabled); }
+    &:checked:disabled, &:indeterminate:disabled { background-color: mt(fg_disabled); color: mt(accent_fg); }
+  }
+
+  // fokus jen z klávesnice: outline na uzlu checkbutton/radiobutton (kolem indikátoru i popisku,
+  // jako Win11); indikátor sám po kliknutí myší žádný prstenec nekreslí. GTK3 kreslí outline jen při
+  // gtk_widget_has_visible_focus (gtkboxgadget.c:515, gtkrange.c:2389), :focus-visible nemá.
+  // LIMIT GTK3: po jakékoli klávese v okně (gtkmain.c:1875) zůstane fokus viditelný i pro další kliky myší.
+  check:not(:hover):focus, check:focus, checkbutton:focus > check { box-shadow: inset 0 0 0 2px mt(fg_muted); }
+  check:checked:focus, check:indeterminate:focus,
+  checkbutton:focus > check:checked, checkbutton:focus > check:indeterminate { box-shadow: none; }
+  radio:not(:hover):focus, radio:focus, radiobutton:focus > radio { box-shadow: none; }
+  checkbutton:focus, radiobutton:focus { outline: $mt-outline; outline-offset: 2px; @include mt-ol(mt-radius(xs)); }
+
+  // mezera indikátor-text 8 px
+  checkbutton > check, radiobutton > radio { margin-right: 8px; }
+  checkbutton > check:dir(rtl), radiobutton > radio:dir(rtl) { margin-right: 0; margin-left: 8px; }
+
+  // menu a popover: indikátor 16 px (Orchisovo odsazení zůstává)
+  menu menuitem check, menu menuitem radio,
+  popover modelbutton check, popover modelbutton radio {
+    min-width: 16px;
+    min-height: 16px;
+    padding: 0;
+    box-shadow: none;
+    background-image: none;
+  }
+  // indikátor vpravo: odstup od textu 12 px, vnější okraj 0 (Orchis dává -12 px a indikátor
+  // vyčnívá ven z řádku); selektory .flat přebíjí Orchisovo box-shadow:none na stavech
+  popover modelbutton.flat check.right:dir(ltr), popover modelbutton.flat radio.right:dir(ltr) { margin-left: 12px; margin-right: 0; }
+  popover modelbutton.flat check.left:dir(rtl), popover modelbutton.flat radio.left:dir(rtl) { margin-right: 12px; margin-left: 0; }
+  menu menuitem check, popover modelbutton check { -gtk-icon-source: none; border-radius: 4px; box-shadow: inset 0 0 0 2px mt(fg_muted); }
+  popover modelbutton.flat check:not(:checked):not(:indeterminate) { box-shadow: inset 0 0 0 2px mt(fg_muted); }
+  popover modelbutton.flat check:not(:checked):not(:indeterminate):hover { box-shadow: inset 0 0 0 2px mt(fg); }
+  popover modelbutton.flat check:not(:checked):not(:indeterminate):disabled { box-shadow: inset 0 0 0 2px mt(fg_disabled); }
+  menu menuitem check:checked, menu menuitem check:indeterminate,
+  popover modelbutton check:checked, popover modelbutton check:indeterminate,
+  popover modelbutton.flat check:checked, popover modelbutton.flat check:indeterminate { background-color: mt(accent); box-shadow: none; }
+  menu menuitem check:checked, popover modelbutton check:checked { -gtk-icon-source: -gtk-recolor(url("assets/mentha-check-symbolic.svg")); }
+  menu menuitem check:indeterminate, popover modelbutton check:indeterminate { -gtk-icon-source: -gtk-recolor(url("assets/mentha-dash-symbolic.svg")); }
+  menu menuitem radio, popover modelbutton radio { -gtk-icon-source: -gtk-recolor(url("assets/mentha-radio-symbolic.svg")); color: mt(fg_muted); }
+  menu menuitem radio:checked, popover modelbutton radio:checked {
+    -gtk-icon-source: -gtk-recolor(url("assets/mentha-radio-dot-symbolic.svg"));
+    background-color: mt(accent);
+    border-radius: 50%;
+    color: mt(accent_fg);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Scale: dráha 4 px, jezdec 18 px kreslený CSS, highlight přechodem
+// Orchis dává jezdci min 32 px a margin -15 px => při dráze 2 px vyšel margin box
+// záporný a GtkRange spočítal dráhu 0 px (zbyl jen puntík). Jezdec 18 px na dráze
+// 4 px má margin -(18-4)/2 = -7 px.
+// -----------------------------------------------------------------------------
+@if $gtk == 3 {
+  scale {
+    min-height: 4px;
+    min-width: 4px;
+  }
+  scale.horizontal { padding: 15px 12px; }
+  scale.vertical   { padding: 12px 15px; }
+  scale.horizontal trough { min-height: 4px; min-width: 64px; }
+  scale.vertical trough   { min-width: 4px; min-height: 64px; }
+
+  scale slider,
+  scale.fine-tune slider,
+  scale.horizontal slider,
+  scale.vertical slider,
+  scale.horizontal.marks-before:not(.marks-after) slider,
+  scale.horizontal.marks-after:not(.marks-before) slider,
+  scale.vertical.marks-before:not(.marks-after) slider,
+  scale.vertical.marks-after:not(.marks-before) slider {
+    margin: -7px;
+  }
+
+}
+
+scale {
+  trough {
+    border-radius: mt-radius(pill);
+    background-color: mt(track);
+    background-image: none;
+  }
+  &:disabled trough { background-color: mt(track_soft); }
+
+  // značky na dráze
+  marks indicator, value indicator { color: mt(fg_muted); }
+
+  highlight, trough highlight {
+    border-radius: mt-radius(pill);
+    background-color: mt(accent);
+    background-image: linear-gradient(to right, mt(grad_from), mt(grad_to));
+  }
+
+  &.vertical highlight, &.vertical trough highlight {
+    background-image: linear-gradient(to top, mt(grad_from), mt(grad_to));
+  }
+
+  // jezdec 18 px celkem (14 + prstenec 2 px slider_ring, který ho oddělí od výplně);
+  // Light bílý, Dark neutrální o stupeň světlejší než plocha (Win11), jinak by splynul s pozadím
+  &.horizontal slider, &.vertical slider,
+  slider {
+    min-width: 14px;
+    min-height: 14px;
+    border: 2px solid mt(slider_ring);
+    border-radius: 50%;
+    animation: none;
+    transition: none;
+    background-image: none;
+    background-color: mt(accent);
+    box-shadow: 0 0 0 4px transparent, 0 1px 3px rgba(0, 0, 0, 0.3);
+    color: mt(accent);
+
+    &:hover { background-color: mt(accent_hover); box-shadow: 0 0 0 4px mt(accent_soft), 0 1px 3px rgba(0, 0, 0, 0.3); }
+    &:active { background-color: mt(accent_pressed); box-shadow: 0 0 0 4px mt(accent_soft), 0 1px 3px rgba(0, 0, 0, 0.3); background-image: none; }
+    &:disabled {
+      background-color: mt(fg_disabled); border-color: mt(slider_ring); box-shadow: none;
+      // Dark: plný prstenec by byl výraznější než šedá výplň; 25 % = 1,48:1 k ploše (≤ 1,6)
+      @if $variant == 'dark' { border-color: mix(mt(slider_ring), mt(surface), 25%); }
+    }
+  }
+  // disabled výplň fg_disabled na dráze track_soft (L 2,16 / D 2,05:1): hodnota zůstane čitelná
+  &:disabled highlight, &:disabled trough highlight { background-color: mt(fg_disabled); background-image: none; }
+}
+
+// fokus scale jen z klávesnice. GTK3: GtkRange (3.24) kreslí outline jen na uzel trough (slider ho nekreslí, ověřeno
+// snímkem), offset 9 px = jezdec přečnívá dráhu o 6 px + mezera 2 px. Prstenec proto protínal značky pod jezdcem
+// (CTRL-704); marks se odsadí o 6 px dál od dráhy, aby začínaly až pod prstencem. GTK4: outline přímo na slideru (GNOME 46).
+@if $gtk == 3 {
+  scale:focus trough { outline: $mt-outline; outline-offset: 9px; @include mt-ol(mt-radius(pill)); }
+  scale.horizontal marks.bottom { margin-top: 13px; }
+  scale.horizontal marks.top { margin-bottom: 13px; }
+  scale.vertical marks.top { margin-right: 13px; }
+  scale.vertical marks.bottom { margin-left: 13px; }
+} @else {
+  scale:focus-visible slider { outline: $mt-outline; outline-offset: 2px; }
+}
+
+// -----------------------------------------------------------------------------
+// Progress a level: jediné místo s přechodem (spolu se scale)
+// -----------------------------------------------------------------------------
+progressbar {
+  trough {
+    border-radius: mt-radius(pill);
+    background-color: mt(track);
+    background-image: none;
+  }
+
+  progress {
+    border-radius: mt-radius(pill);
+    background-color: mt(accent);
+    background-image: linear-gradient(to right, mt(grad_from), mt(grad_to));
+  }
+
+  &.vertical progress {
+    background-image: linear-gradient(to top, mt(grad_from), mt(grad_to));
+  }
+}
+
+levelbar {
+  trough { border-radius: mt-radius(pill); }
+
+  block {
+    border-radius: mt-radius(pill);
+
+    &.empty { background-color: mt(track); }
+    &:not(.empty) {
+      background-color: mt(accent);
+      background-image: linear-gradient(to right, mt(grad_from), mt(grad_to));
+    }
+    // level_low/high: jantar/zelená s >= 3:1 vůči ploše okna (gtk-validate); dráha je jen světlý tvar.
+    // .high nechává akcent: v GTK3 ho dostanou i střední hodnoty (offset high 0,75)
+    &.low  { background-color: mt(level_low); background-image: none; }
+    &.full { background-color: mt(level_high); background-image: none; }
+  }
+
+  &.vertical block:not(.empty):not(.low):not(.full) {
+    background-image: linear-gradient(to top, mt(grad_from), mt(grad_to));
+  }
+  // diskrétní režim: gradient by se kreslil v každém segmentu zvlášť (zebra)
+  &.discrete block:not(.empty):not(.low):not(.full) { background-image: none; background-color: mt(accent); }
+}
+
+// disabled jako scale: výplň fg_disabled bez přechodu na dráze track_soft (opacity ztlumila i dráhu, CTRL-703)
+progressbar:disabled trough, levelbar:disabled block.empty { background-color: mt(track_soft); }
+progressbar:disabled progress, levelbar:disabled block:not(.empty) { background-color: mt(fg_disabled); background-image: none; }
+
+// -----------------------------------------------------------------------------
+// Scrollbary: štíhlé overlay
+// -----------------------------------------------------------------------------
+scrollbar {
+  slider {
+    background-color: mt(fg_disabled);
+    &:hover { background-color: mt(fg_muted); }
+    &:active { background-color: mt(fg_muted); }
+  }
+
+  &.overlay-indicator {
+    &:not(.dragging):not(.hovering) {
+      background-color: transparent;
+
+      slider { border-color: transparent; background-color: mt(fg_disabled); }
+    }
+
+    &.dragging, &.hovering { background-color: mt(surface_raised); }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Tooltip: inverzní
+// -----------------------------------------------------------------------------
+tooltip {
+  &.background, &.background.csd {
+    border-radius: mt-radius(sm);
+    background-color: mt(tooltip_bg);
+    box-shadow: 0 0 0 1px mt(hairline), mt(shadow_popover_inline);
+    color: mt(tooltip_fg);
+
+    // GTK3 tooltip je samostatné okno bez CSD okraje: stín i hairline mimo box se oříznou. Dark: tmavý podklad
+    // splýval s oknem (1,14:1), proto o stupeň světlejší (surface_raised) a obrys uvnitř boxu (control_border)
+    @if $gtk == 3 and $variant == 'dark' {
+      background-color: mt(surface_raised);
+      box-shadow: inset 0 0 0 1px mt(control_border), mt(shadow_popover_inline);
+    }
+  }
+
+  label, * { color: mt(tooltip_fg); }
+}
+
+// -----------------------------------------------------------------------------
+// Popovery a menu: surface_raised, radius 16, položky 10
+// GTK3: karta je uzel popover.background (obrys jako border, aby obíhal i šipku;
+// margin 10 px nechá místo stínu, jinak ho okno ořízne do šedého obdélníku).
+// GTK4: kartou je popover > contents, uzel popover je průhledný.
+// -----------------------------------------------------------------------------
+@if $gtk == 3 {
+  // .csd popover.background: Orchis ho má se specificitou (0,2,1) a border-width 0, bez něj hrana mizí
+  popover.background,
+  .csd popover.background,
+  popover {
+    background-color: mt(surface_raised);
+    border: 1px solid mt(border);
+    box-shadow: mt(shadow_popover_inline);
+    border-radius: mt-radius(lg);
+    margin: 10px;
+    color: mt(fg);
+
+    &:backdrop { box-shadow: mt(shadow_popover_inline); }
+  }
+} @else {
+  popover.background {
+    background: none;
+    box-shadow: none;
+    color: mt(fg);
+
+    > contents {
+      background-color: mt(surface_raised);
+      border-radius: mt-radius(lg);
+      box-shadow: mt(shadow_popup), 0 0 0 1px mt(hairline);
+    }
+
+    > arrow {
+      background-color: mt(surface_raised);
+      border: 1px solid mt(hairline);
+    }
+  }
+}
+
+menu,
+.menu,
+.context-menu {
+  background-color: mt(surface_raised);
+  border-radius: mt-radius(lg);
+  box-shadow: inset 0 0 0 1px mt(border);
+  color: mt(fg);
+}
+
+@if $gtk == 3 {
+  // text položky 14 px od hrany menu (padding menu 4 + položky 10); check/radio zůstávají zarovnané
+  menu { padding: 4px; }
+  menu menuitem {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  // CSD menu (Orchis .background.csd > menu) kreslí hranu jen když ji dostane i tady
+  .background.csd > menu, .background > menu { box-shadow: inset 0 0 0 1px mt(border); }
+  // okno menu (CSD popup): obrys a stín na decoration, rohy stejné jako výplň menu
+  .csd.popup decoration { border-radius: mt-radius(lg); box-shadow: mt(shadow_popup); }
+}
+
+menu menuitem,
+popover modelbutton,
+popover.menu modelbutton,
+popover.background modelbutton {
+  border-radius: mt-radius(sm);
+  color: mt(fg);
+
+  &:hover, &:focus, &:selected {
+    background-color: mt(selection);
+    color: mt(fg);
+  }
+
+  &:disabled { color: mt(fg_disabled); }
+}
+
+// po otevření myší není první položka podbarvená (GTK3 jí dá :focus bez hoveru)
+popover modelbutton.flat:focus:not(:hover) { outline: none; box-shadow: none; background-color: transparent; }
+popover modelbutton.flat:hover { background-color: mt(selection); }   // stejný tint jako menu menuitem, ne šedá
+
+menu separator, popover separator { background-color: mt(hairline); }
+
+// menubar: položky v běžné barvě (Orchis je kreslí jako disabled šedé)
+menubar > menuitem {
+  color: mt(fg);
+  border-radius: mt-radius(xs);
+}
+menubar > menuitem:hover { background-color: mt(selection); }
+
+// -----------------------------------------------------------------------------
+// Výběr: tokenová selection_strong barva, text zůstává fg
+// Hierarchie: klid < hover (mt(hover)) < výběr (selection_strong)
+// -----------------------------------------------------------------------------
+.view:selected,
+.view:selected:focus,
+.view:selected:hover,
+iconview:selected,
+iconview.cell:selected,
+treeview.view:selected,
+treeview.view:selected:focus,
+treeview.view:selected:hover,
+row:selected,
+row:selected:hover,
+flowboxchild:selected,
+.cell:selected,
+// vyšší specificita: přebíjí Orchisova pravidla (accent text na 20% tintu)
+.nemo-window .view:selected,
+.nemo-window .view:selected:focus,
+.nautilus-window notebook :not(treeview).view:selected,
+.nautilus-window.background.csd notebook scrolledwindow .view:selected,
+.nautilus-window flowboxchild:selected .icon-item-background,
+flowbox flowboxchild:selected,
+.background.csd .view:selected {
+  background-color: mt(selection_strong);
+  background-image: none;
+  color: mt(fg);
+}
+
+// vybraný TEXT (uzel selection v entry/label/textview, view): samostatný podklad,
+// selection_strong má na bílé jen ~1,3:1 a text se v něm neoznačí zřetelně
+selection,
+entry:selected,
+textview text selection,
+label selection,
+.nemo-window .view selection,
+.nautilus-window notebook :not(treeview).view selection,
+.background.csd .view selection {
+  background-color: $mt-text-sel;
+  background-image: none;
+  color: mt(fg);
+}
+
+// hover řádků: jediná vrstva (Orchis přidává ještě background-image, které se sčítá)
+row:hover { background-color: mt(hover); }
+row:selected:hover { background-color: mt(selection_strong); }
+// Orchis u activatable řádků a hlaviček treeview přidává ještě alpha(currentColor) overlay
+// a ripple animaci; hover i active řeší jediná vrstva tokenu, focus je jen outline
+row.activatable:hover, row.activatable:focus, row.activatable:active,
+row.activatable:selected:hover, row.activatable.has-open-popup,
+treeview.view header button:hover {
+  box-shadow: none;
+  background-image: none;
+  animation: none;
+}
+row.activatable:hover { background-color: mt(hover); }
+row.activatable:active { background-color: mt(active); }
+row.activatable:selected:hover { background-color: mt(selection_strong); }
+
+// Ikonový pohled, flowbox: zaoblený blok. TreeView zaoblení nemá: GTK3 kreslí
+// pozadí každé buňky zvlášť a pozičními pseudotřídami sloupce nerozliší, takže
+// jediná čistá varianta je souvislý pás s radiusem 0.
+iconview.cell:selected, flowboxchild:selected { border-radius: mt-radius(sm); }
+
+treeview.view,
+treeview.view.cell,
+treeview.view:selected,
+treeview.view.cell:selected,
+treeview.view:hover {
+  border-radius: 0;
+}
+
+treeview.view:hover,
+treeview.view.cell:hover,
+.nemo-window .sidebar .view.cell:hover {
+  background-image: none;
+  box-shadow: none;
+  background-color: mt(hover);
+}
+treeview.view:selected { background-image: none; }
+
+@if $gtk == 3 {
+  // vzduch mezi buňkami; Nemo sidebar si 0 nastavuje vlastním blokem (souvislý pás výběru)
+  // řádek 32 px (text 21 + 11) na 4px mřížce; Nemo seznamový pohled si drží hustotu 4 (ikona 24 + 4)
+  treeview.view { -GtkTreeView-horizontal-separator: 8; -GtkTreeView-vertical-separator: 11; }
+  .nemo-window treeview.view { -GtkTreeView-vertical-separator: 4; }
+  .sidebar treeview.view, treeview.view.sidebar { -GtkTreeView-horizontal-separator: 12; }
+  // buňka check/radio ve vybraném řádku zachová vzhled (široký selektor
+  // .background.csd .view:selected jinak přebije barvu fajfky)
+  treeview.view check, treeview.view radio {
+    min-width: 16px;
+    min-height: 16px;
+    margin: 0;
+    padding: 0;
+  }
+  treeview.view check, treeview.view check:hover, treeview.view check:selected {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 2px mt(fg_muted);
+    -gtk-icon-source: none;
+    border-radius: 4px;
+  }
+  treeview.view check:hover { box-shadow: inset 0 0 0 2px mt(fg); }
+  treeview.view check:checked, treeview.view check:indeterminate,
+  treeview.view check:hover:checked, treeview.view check:selected:checked,
+  treeview.view check:selected:indeterminate, treeview.view check:checked:selected,
+  .background.csd treeview.view check:selected:checked,
+  .background.csd treeview.view check:selected:indeterminate {
+    background-color: mt(accent);
+    box-shadow: none;
+    color: mt(accent_fg);
+  }
+  treeview.view check:checked, treeview.view check:selected:checked,
+  .background.csd treeview.view check:selected:checked { -gtk-icon-source: -gtk-recolor(url("assets/mentha-check-symbolic.svg")); }
+  treeview.view check:indeterminate, treeview.view check:selected:indeterminate,
+  .background.csd treeview.view check:selected:indeterminate { -gtk-icon-source: -gtk-recolor(url("assets/mentha-dash-symbolic.svg")); }
+  treeview.view radio, treeview.view radio:hover, treeview.view radio:selected {
+    background-color: transparent;
+    box-shadow: none;
+    color: mt(fg_muted);
+  }
+  treeview.view radio:checked, treeview.view radio:selected:checked,
+  .background.csd treeview.view radio:selected:checked { background-color: mt(accent); color: mt(accent_fg); }
+}
+
+// progress buňka: trough a výplň mají stejný tvar ve vybraném i nevybraném řádku.
+// GtkCellRendererProgress kreslí text dvakrát s ořezem (přes výplň barvou uzlu progressbar, přes
+// dráhu barvou uzlu trough), takže dvě barvy rozříznou číslice uprostřed ("4|5 %"). Proto obě
+// barvy fg a výplň je tint akcentu ($mt-progress-cell): >= 2:1 vůči ploše buňky a fg na něm
+// >= 4,5:1 (kontrola v gtk-validate). Radius xs: krátký pruh (9 %) se jinak deformuje na tyčku.
+$mt-progress-cell: mix(mt(accent), mt(surface), 55%);
+treeview.view.trough {
+  background-color: mt(track_soft);
+  box-shadow: none;
+  border-radius: mt-radius(xs);
+  border: none;
+  color: mt(fg);
+}
+// ve vybraném řádku stejná dráha (rám by z buňky dělal vstupní pole a bílá by v pásu výběru svítila)
+treeview.view.trough:selected,
+.background.csd treeview.view.trough:selected {
+  background-color: mt(track_soft);
+  box-shadow: none;
+  border-radius: mt-radius(xs);
+  border: none;
+  color: mt(fg);
+}
+treeview.view.progressbar,
+treeview.view.progressbar:selected,
+.background.csd treeview.view.progressbar:selected {
+  border: none;
+  border-radius: mt-radius(xs);
+  background-color: $mt-progress-cell;
+  background-image: none;
+  color: mt(fg);
+}
+
+// -----------------------------------------------------------------------------
+// Sidebar (Nemo, file chooser): surface_alt + pilulka
+// -----------------------------------------------------------------------------
+.sidebar,
+placessidebar,
+placessidebar.sidebar,
+stacksidebar.sidebar,
+stacksidebar.sidebar list {
+  background-color: mt(surface_alt);
+  border: none;
+  color: mt(fg_muted);
+}
+// Orchis má (0,2,2) `stacksidebar.sidebar:dir(ltr) list { border-right … }` s alfou, která se kreslí
+// na nenamalovaný povrch jako téměř černá. Neprůhledná mt(border).
+stacksidebar.sidebar:dir(ltr) list { border-right: 1px solid mt(border); border-left: none; }
+stacksidebar.sidebar:dir(rtl) list { border-left: 1px solid mt(border); border-right: none; }
+
+// ListBox sidebary (GtkPlacesSidebar, StackSidebar, Terminal předvolby): pilulkový výběr
+placessidebar.sidebar row,
+.navigation-sidebar row,
+stacksidebar.sidebar row,
+.sidebar row,
+.sidebar list row,
+list.navigation-sidebar row,
+dialog .sidebar row {
+  min-height: 30px;
+  margin: 2px 8px;
+  padding: 0 12px;
+  border-radius: mt-radius(sm);
+  color: mt(fg_muted);
+
+  &:hover { background-color: $mt-sidebar-hover; }
+
+  // výběr jako Nemo: selection_sidebar + selection_text (>= 5:1; accent_text na selection jen 4,51)
+  &:selected, &:selected:hover, &:selected:focus {
+    background-color: mt(selection_sidebar);
+    color: mt(selection_text);
+    font-weight: 600;
+
+    image, label { color: mt(selection_text); }
+  }
+
+  image { color: mt(fg_muted); }
+}
+
+@if $gtk == 3 {
+  // Terminál předvolby: ListBox bez tříd sidebar/navigation-sidebar (scrolledwindow bez rámu).
+  // Stejná pilulka jako ostatní sidebary; rámované seznamy (galerie, dialogy) zůstávají nedotčené.
+  scrolledwindow:not(.frame) > viewport > list:not(.boxed-list) > row.activatable {
+    min-height: 32px;
+    margin: 2px 8px;
+    padding: 0 4px;
+    border-radius: mt-radius(sm);
+
+    &:hover { background-color: $mt-sidebar-hover; }
+    // výběr selection_sidebar (L silnější než selection, zřetelně nad hoverem), text selection_text >= 5:1
+    &:selected, &:selected:hover, &:selected:focus {
+      background-color: mt(selection_sidebar);
+      color: mt(selection_text);
+      font-weight: 600;
+
+      image, label { color: mt(selection_text); }
+    }
+  }
+
+  // děti řádků z C kódu Terminálu mají vlastní okraje 12 px (řádek 46 px, rozteč 50): záporný okraj vrací rytmus 36 px
+  scrolledwindow:not(.frame) > viewport > list:not(.boxed-list) > row.activatable > * { margin-top: -7px; margin-bottom: -7px; }
+
+  // Nemo používá treeview (NemoPlacesTreeView) s víc sloupci: výběr i hover jsou
+  // souvislý pás od hrany k hraně (radius 0, bez borderu), jinak se rozpadá na
+  // pahýl + pilulku + pahýl.
+  .nemo-window .sidebar .view,
+  .nemo-window .sidebar iconview,
+  .nemo-window .places-treeview,
+  .nemo-window .sidebar treeview.view {
+    background-color: mt(surface_alt);
+    color: mt(fg_muted);
+    // ukazatel zaplnění disku = měřák pevné délky 80 px (nezávislý na šířce panelu i na elipse popisku;
+    // při výchozí šířce končí 18 px před koncem „Souborový sy…“, takže nekopíruje rozsah textu),
+    // 4 px pill: dráha track (>= 2:1 vůči surface_alt), výplň disk_fill (>= 2,4:1 vůči track).
+    // Řádek 40 px: text končí 27 px od vrchu řádku, pruh 4 px pod textem a 5 px nad spodkem řádku
+    // (6 px pruh u spodní hrany působil přilepeně, kolo 10).
+    // LIMIT (nemo-cell-renderer-disk.c 6.6.3 ř. 248-256): x = cell_area.x + xpad (začátek textu, vpravo jen RTL),
+    // w = min(šířka buňky - 2*xpad, max-length), y = spodek buňky - bar-width - bottom-padding; měřák vpravo
+    // vedle popisku (maketa) nejde. Ř. 262-271: výplň je plná barva (cairo_fill), gradient nejde.
+    -NemoPlacesTreeView-disk-full-bg-color: mt(track);
+    -NemoPlacesTreeView-disk-full-fg-color: mt(disk_fill);
+    -NemoPlacesTreeView-disk-full-bar-width: 4px;
+    -NemoPlacesTreeView-disk-full-bar-radius: 2px;
+    -NemoPlacesTreeView-disk-full-max-length: 80px;
+    // záporný padding posune pruh pod spodek buňky do vertical-separatoru; renderer ořezává na background_area
+    -NemoPlacesTreeView-disk-full-bottom-padding: -5px;
+    -GtkTreeView-vertical-separator: 13;
+    -GtkTreeView-horizontal-separator: 0;
+  }
+
+  // Limit: pás výběru je od hrany k hraně panelu. Odsazení 8 px by vyžadovalo margin na
+  // scrolledwindow sidebaru, jehož okolí (surface) by pak vykouklo jako bílý pruh, a třída
+  // rodiče nejde spolehlivě zachytit. Souvislý pás je jediná varianta bez rozpadu na kusy.
+
+  .nemo-window .sidebar .view.cell,
+  .nemo-window .sidebar iconview.cell,
+  .nemo-window .places-treeview .view.cell,
+  .nemo-window .sidebar row.cell {
+    border: none;
+    border-radius: 0;
+    background-clip: border-box;
+
+    // hover mění jen podklad, text zůstává fg_muted: výběr (selection_text) je nejsilnější stav
+    &:hover {
+      background-color: $mt-sidebar-hover;
+      background-image: none;
+    }
+
+    // výběr selection_sidebar + selection_text (>= 5:1, nad hoverem >= 1,1:1; gtk-validate)
+    // LIMIT: font-weight 600 se nevykreslí, NemoPlacesTreeView renderer si váhu nastavuje sám
+    &:selected, &:selected:focus, &:selected:hover {
+      background-color: mt(selection_sidebar);
+      background-image: none;
+      color: mt(selection_text);
+      font-weight: 600;
+    }
+  }
+
+  .nemo-window .sidebar .view.expander { color: mt(fg_muted); }
+  .nemo-window .sidebar .view.expander:hover { color: mt(fg); }
+
+  // -----------------------------------------------------------------------------
+  // Nemo: ploché okno, pilulková cesta
+  // -----------------------------------------------------------------------------
+  .nemo-window {
+    .primary-toolbar {
+      background-color: mt(surface);
+      // stejná hairline jako nad statusbarem: toolbar opticky oddělený od obsahu i sidebaru
+      border-bottom: 1px solid mt(hairline);
+      box-shadow: none;
+      padding: 0 6px;
+    }
+
+    .toolbar button { border-radius: mt-radius(sm); }
+
+    scrolledwindow.frame { border: none; }
+    .view { background-color: mt(surface); }
+    // neaktivní panel o stupeň „níž“ než aktivní: Light surface_alt (šedší než bílá), Dark bg (tmavší než
+    // surface; světlejší surface_alt by v Dark četl jako vyvýšený, tedy výraznější)
+    .nemo-inactive-pane .view:not(:selected) { background-color: if($variant == 'dark', mt(bg), mt(surface_alt)); }
+    .nemo-inactive-pane .view:selected { background-color: mt(selection); }
+
+    // Ikonový pohled: NemoIconContainer je widget.view (ne treeview). Výběr plná akcentová
+    // pilulka, hover bez podkladu (zesvětlí jen ikonu, kterou kreslí Nemo); seznam zůstává na jemném
+    // selection_strong, sidebar na selection s textem accent_text.
+    .nemo-window-pane .view:not(treeview):selected,
+    .nemo-window-pane .view:not(treeview):selected:focus {
+      background-color: mt(accent);
+      color: mt(accent_fg);
+      border-radius: mt-radius(xs);
+      // LIMIT (nemo-icon-canvas-item.c 6.6.3): ikona se kreslí bez stavu SELECTED (gtk_render_icon_surface,
+      // třída .nemo-canvas-item, real_map_surface mění jen prelit/clipboard), pozadí jen na text_rect popisku.
+      // Podklad pod ikonou přes box-shadow popisku nejde: stín má šířku popisku + spread a při překreslení
+      // jen položky se ořízne na její bounds, při celém překreslení ne (kolo 7: 66 px vs 105 px blob).
+    }
+    .nemo-window-pane .view:not(treeview):hover { background-color: transparent; }
+
+    // plovoucí stavový štítek (cesta při hoveru, Načítání…): NemoFloatingBar kreslí pozadí i
+    // rám přes celou alokaci, takže margin by vytvořil druhou kartu. Štítek přilepený do
+    // rohu nad statusbarem.
+    .floating-bar {
+      margin: 0;
+      box-shadow: none;
+      background-color: mt(surface_raised);
+      border: 1px solid mt(hairline);
+      border-right: none;
+      border-bottom: none;
+      border-radius: mt-radius(sm) 0 0 0;
+      padding: 4px 8px;
+      color: mt(fg_muted);
+
+      button {
+        background: none;
+        box-shadow: none;
+        min-width: 24px;
+        min-height: 24px;
+        padding: 0;
+        border-radius: mt-radius(xs);
+        color: mt(fg_muted);
+
+        &:hover { background-color: mt(hover); color: mt(fg); image { color: mt(fg); } }
+      }
+      // stop a ostatní ikony štítku vždy symbolické (Papirus dá barevnou ikonu)
+      button image, image { -gtk-icon-style: symbolic; color: mt(fg_muted); }
+    }
+
+    // inline přejmenování (F2): EelEditableLabel je widget.entry; výběr kreslí pozadím
+    // vlastního uzlu ve stavu :selected, min-height ignoruje (výšku dává padding)
+    // prstenec uvnitř alokace: vnější by NemoIconContainer přemaloval a zůstaly by jen rohy
+    // EelEditableLabel respektuje do výšky border, ne svislý padding: border 4 px dá mezeru, prstenec 2 px
+    // kreslí border-image (9-slice 16 px, řez 6 = roh r 6; vnitřní část průhledná, prosvítá výplň surface)
+    // LIMIT: výběr textu kreslí EelEditableLabel přes celou výšku řádku (bez ohledu na border/padding/background-clip),
+    // svisle proto mezi výběrem a prstencem mezera nevznikne; vodorovně ji dává padding 8 px
+    // (změřeno sc. 23: prstenec y 185-186 a 202-203, výběr y 187-201; outline + outline-offset
+    // EelEditableLabel nekreslí vůbec, ověřeno 2026-10-18)
+    .nemo-window-pane widget.entry {
+      background-color: mt(surface);
+      background-clip: border-box;
+      color: mt(fg);
+      border: 4px solid transparent;
+      border-image: -gtk-recolor(url("assets/mentha-ring-2px-symbolic.svg"), success mt(focus)) 6 / 6px stretch;
+      box-shadow: none;
+      border-radius: mt-radius(xs);
+      padding: 4px 8px;
+
+      selection { background-color: $mt-text-sel; color: mt(fg); }
+    }
+    .nemo-window-pane widget.entry:selected,
+    .nemo-window-pane widget.entry:selected:focus {
+      background-color: $mt-text-sel;
+      color: mt(fg);
+      box-shadow: none;
+    }
+
+    // toolbar: navigace, location entry i přepínače pohledu 32 px, 4 px od okrajů; drobky
+    // pathbaru (toggle) a jeho posuvné šipky mají vlastní rozměry níž, proto :not(.path-bar)
+    .primary-toolbar :not(.path-bar) > button.image-button:not(.circular):not(.titlebutton),
+    .primary-toolbar :not(.path-bar) > button.toggle:not(.circular):not(.titlebutton) {
+      min-height: 32px;
+      min-width: 32px;
+      margin: 4px 1px;
+      padding: 0;
+    }
+    .primary-toolbar entry {
+      min-height: 32px;
+      margin: 4px 0;
+      border-radius: mt-radius(sm);
+    }
+
+    // vyhledávací lišta: pole + Aa/.* jako jeden blok
+    .linked:not(.vertical) > entry {
+      min-height: 32px;
+      padding-top: 0;
+      padding-bottom: 0;
+      margin-top: 4px;
+      margin-bottom: 4px;
+      border-radius: mt-radius(sm);
+    }
+    .linked:not(.vertical) > entry:not(:only-child) { border-radius: mt-radius(sm) 0 0 mt-radius(sm); }
+    // Aa / .* vedle pole jsou toggle (Orchis pilulka 28 px): stejná linka 32 px jako pole, jeden tvar
+    // se zaoblením jen na vnějších rozích. .toggle je nutné pro specificitu.
+    .linked:not(.vertical) > entry ~ button.toggle:not(.circular):not(.suggested-action):not(.destructive-action) {
+      background-color: mt(surface_alt);
+      background-image: none;
+      // stejná hrana jako pole (chráněný obrys .nemo-window infobar entry:not(:focus)): jeden obrys skupiny
+      box-shadow: inset 0 0 0 1px mt(border);
+      min-height: 32px;
+      margin-top: 4px;
+      margin-bottom: 4px;
+      padding-top: 0;
+      padding-bottom: 0;
+      border-radius: 0;
+      color: mt(fg_muted);
+
+      &:hover { background-color: mt(hover); color: mt(fg); }
+      &:checked { background-color: mt(accent_soft); color: mt(accent_text); }
+      &:last-child { border-radius: 0 mt-radius(sm) mt-radius(sm) 0; }
+    }
+    // přepínač podsložek (↳) stojí za skupinou, ne v ní: 32x32 jako ikonová tlačítka toolbaru.
+    // Je to GtkToggleButton s dítětem GtkImage, třídu .image-button nemá (nemo-search-bar.glade ř. 126-138);
+    // infobar box > … přebije specificitou pravidlo přepínačů statusbaru (box:not(.linked) > button.toggle, 28 px)
+    infobar box > .linked:not(.vertical) ~ button.toggle:not(.circular):not(.titlebutton):not(.flat) {
+      min-width: 32px;
+      min-height: 32px;
+      margin: 4px 0;
+      padding: 0;
+      border: none;
+      border-image: none;
+      border-radius: mt-radius(sm);
+      box-shadow: none;
+      background-color: transparent;
+      background-image: none;
+      color: mt(fg_muted);
+
+      &:hover { background-color: mt(hover); color: mt(fg); }
+      &:checked { background-color: mt(accent_soft); color: mt(accent_text); }
+    }
+    .linked:not(.vertical) > button:checked {
+      background-color: mt(accent_soft);
+      color: mt(accent_text);
+    }
+
+    // statusbar: panely vlevo (toggle) jsou sourozenci uzlu statusbar, ne jeho děti. Skupina před ním
+    // je box; 28 px, 5 px od hrany. Jen toggle/image-button přímo v boxu, který není linked ani floating-bar.
+    box:not(.linked):not(.floating-bar) > button.image-button:not(.circular):not(.titlebutton):not(.flat),
+    box:not(.linked):not(.floating-bar) > button.toggle:not(.circular):not(.titlebutton):not(.flat) {
+      min-height: 28px;
+      min-width: 28px;
+      margin: 5px 1px;
+      padding: 0;
+      border: none;
+      border-image: none;
+      border-radius: mt-radius(sm);
+      box-shadow: none;
+      background-color: transparent;
+      background-image: none;
+      color: mt(fg_muted);
+
+      &:hover { background-color: mt(hover); color: mt(fg); }
+      &:checked { background-color: mt(accent_soft); color: mt(accent_text); }
+      image { min-width: 16px; min-height: 16px; }
+    }
+    // Statusbar (NemoStatusBar = box.toolbar, border-width 2, tlačítka balená s paddingem 2; nemo-statusbar.c
+    // ř. 166-210): první přepínač 2 + 2 + 4 = 8 px od levé hrany, konec dráhy zoomu 2 + 2 + 4 = 8 px od pravé.
+    // Glyfy: Nemo registruje velikost statusbar-icon 11 px (nemo-statusbar.h ř. 42), -gtk-icon-transform by
+    // rastr jen rozmazal. GtkImage se skryje a stejnou ikonu kreslí pozadí tlačítka ze stejného motivu ikon
+    // v 14 px (vektorově, symbolicky v currentColor) jako glyfy toolbaru. Pořadí viditelných dětí:
+    // sidebar zobrazen = places, tree, separátor, hide; skrytý = jen show (nemo-statusbar.c ř. 300-316).
+    // specificita nad pravidlem přepínačů výš (to nastavuje background-image: none)
+    $sb: "box.toolbar:not(.linked):not(.floating-bar) > button.image-button:not(.circular):not(.titlebutton):not(.flat)";
+    #{$sb} {
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 14px 14px;
+      image { opacity: 0; }
+    }
+    #{$sb}.toggle:nth-child(1) { background-image: -gtk-icontheme("nemo-sidebar-places-symbolic"); }
+    #{$sb}.toggle:nth-child(2) { background-image: -gtk-icontheme("nemo-sidebar-tree-symbolic"); }
+    #{$sb}:not(.toggle):not(:first-child) { background-image: -gtk-icontheme("nemo-sidebar-hide-symbolic"); }
+    #{$sb}:not(.toggle):first-child { background-image: -gtk-icontheme("nemo-sidebar-show-symbolic"); }
+    #{$sb}:first-child { margin-left: 4px; }
+    // zoom: scale je mimo statusbar, dráha aspoň 96 px; padding 4 je dosah jezdce, margin 0 => konec dráhy 8 px od hrany
+    scale { min-width: 120px; padding: 0 4px; margin-right: 0; }
+    scale trough { min-width: 96px; }
+  }
+}
+
+// Cesta (breadcrumb): NemoPathBar i GtkPathBar jsou GtkContainer bez vlastního CSS
+// boxu, margin/padding/pozadí kontejneru se ignorují a tlačítka dostanou celou
+// výšku lišty. Proto vzduch a výška jdou přímo na tlačítka.
+// Pořadí uzlů: [levý slider, pravý slider, skryté /, domů, ..., aktuální, skrytý]. Oddělovač › sedí
+// v transparentním border-right každého drobku kromě aktuálního (background-origin: border-box);
+// pilulka hover/checked je inset box-shadow, který se kreslí jen v padding-boxu, takže
+// chevron zůstane mimo ni. Elipsový radius vrací pravému rohu zaoblení (vnitřní radius
+// padding-boxu = vnější mínus šířka borderu). Za sliderem « tak nikdy nestojí ›.
+// Selektory drobků jsou (0,4,1) s .toggle: Orchis má `.nemo-window .primary-toolbar
+// button:not(.text-button):not(.image-button) { padding: 0 4px }` (0,4,1) a náš výstup leží
+// později, takže vyhraje pořadím. Drobek 28 px, 6 px od hran 40px lišty.
+.path-bar.linked:not(.vertical) > button.toggle {
+  min-height: 28px;
+  min-width: 0;
+  margin: 6px 0;
+  padding: 0 14px 0 10px;
+  border: none;
+  border-image: none;
+  border-radius: mt-radius(pill);
+  box-shadow: none;
+  background-color: transparent;
+  background-image: none;
+  color: mt(fg_muted);
+
+  // ikona 8 px od levé hrany pilulky, k textu 3 + 2 px spacing boxu (+ boční nosnost písma ~1 px = 6);
+  // label bez Orchisových 2 px. Aktivní drobek: 8 | ikona | 6 | text | 14 (jako chip s ikonou).
+  // LIMIT GTK3: drobek bez ikony má prázdný, ale viditelný GtkImage (Nemo dělá show_all), text proto
+  // začíná na pozici ikona + mezera (+3 px). GTK3 CSS nemá :empty, proto to vyrovná pravý padding 14:
+  // aktivní bez ikony 13 | text | 14 = opticky souměrně. Neaktivní drobky mají vlastní padding níž.
+  > box > image { margin: 0 3px 0 -2px; }
+  > box > label { margin: 0; }
+  label, image { color: mt(fg_muted); }
+  &:hover { background-color: transparent; box-shadow: inset 0 0 0 999px mt(hover); color: mt(fg); label, image { color: mt(fg); } }
+  &:checked, &:checked:hover {
+    border-image: none;
+    box-shadow: inset 0 0 0 999px mt(accent_soft);
+    background-color: transparent;
+    color: mt(accent_text);
+    font-weight: 600;
+
+    label, image { color: mt(accent_text); }
+  }
+  &:disabled { color: mt(fg_disabled); }
+}
+// :last-child nejde (za aktuálním drobkem je ještě skrytý uzel), aktuální složka je :checked
+.path-bar.linked:not(.vertical) > button.toggle:not(.slider-button):not(:checked) {
+  // prázdný image přidá 3 px: text 8 | 8 v padding-boxu (hover souměrný), boční nosnost písma ~1 px
+  // dá ink 9 od hrany a 32-34 px text-text; vnitřní pravý radius 26 - 12 = 14
+  padding: 0 8px 0 5px;
+  border-right: 12px solid transparent;
+  border-radius: 14px 26px 26px 14px / 14px;
+  background-image: -gtk-recolor(url("assets/mentha-chevron-right-symbolic.svg"));
+  background-origin: border-box;
+  background-clip: border-box;
+  background-position: 100% center;
+  background-size: 12px 12px;
+  background-repeat: no-repeat;
+  font-weight: 400;
+  // oddělovač je vždy tlumený, i v aktivním drobku
+  color: mt(fg_muted);
+  label, image { color: mt(fg_muted); }
+  &:hover { color: mt(fg); label, image { color: mt(fg); } }
+}
+
+// posuvné šipky pathbaru: menší tlumený chevron bez rámečku, řadí se k drobkům (ne k navigaci Zpět)
+.path-bar.linked:not(.vertical) > button.slider-button {
+  min-width: 20px;
+  min-height: 28px;
+  margin: 6px 2px 6px 0;
+  padding: 0;
+  border: none;
+  border-image: none;
+  background-color: transparent;
+  box-shadow: none;
+  border-radius: mt-radius(xs);
+  color: mt(fg_muted);
+  // plná trojúhelníková pan-* ikona je cizí vedle chevronů: vlastní chevron přes pozadí
+  image { opacity: 0; }
+  background-image: -gtk-recolor(url("assets/mentha-chevron-left-symbolic.svg"));
+  background-repeat: no-repeat;
+  background-position: center;
+  // glyf chevronu zabírá ~13/16 viewBoxu: 15 px => ink 12 px (stejně jako glyfy drobků)
+  background-size: 15px 15px;
+
+  &:first-child { margin-left: 12px; }
+  &:nth-child(2) { background-image: -gtk-recolor(url("assets/mentha-chevron-right-symbolic.svg")); margin: 6px 0 6px 2px; }
+  &:hover { background-color: mt(hover); box-shadow: none; color: mt(fg); }
+  &:disabled { opacity: 0; }
+}
+
+// -----------------------------------------------------------------------------
+// StackSwitcher: segmentovaný přepínač, aktivní segment jemný akcent (ne plná modrá)
+// -----------------------------------------------------------------------------
+stackswitcher {
+  background-color: mt(surface_alt);
+  border-radius: mt-radius(pill);
+  padding: 2px;
+}
+
+stackswitcher > button,
+stackswitcher:not(.vertical) > button:not(.suggested-action):not(.destructive-action) {
+  border-radius: mt-radius(pill);
+  box-shadow: none;
+  background-image: none;
+
+  // fokus: Orchis `:focus:not(:hover)` kreslí prstenec box-shadow i po kliknutí myší. Segmenty fokus kliknutím
+  // nepřebírají (GtkStackSwitcher focus-on-click FALSE), prstenec proto zůstával na prvním segmentu. Zůstává jen
+  // outline z obecného button:focus (GTK3 ho kreslí jen při viditelném fokusu z klávesnice) ve tvaru pilulky
+  &:focus, &:focus:not(:hover) { box-shadow: none; @include mt-ol(mt-radius(pill)); }
+  // neaktivní segment má tlumený text v každém kontextu. Orchis tlumí jen v toolbar/titlebar a jejich `button:focus`
+  // vrací plnou barvu, takže segment s fokusem (nastavení appletů: switcher v Gtk.Toolbar) vypadal jako vybraný
+  &:not(:checked):not(:disabled):not(:backdrop) { color: mt(fg_muted); }
+  &:not(:checked):not(:disabled):not(:backdrop):hover { color: mt(fg); }
+  &:active { background-image: none; background-color: mt(active); }
+  &:checked {
+    background-color: mt(accent_soft);
+    color: mt(selection_text);   // Light 5,2:1 (accent_text dával na accent_soft jen 4,58:1)
+    font-weight: 600;
+    box-shadow: none;
+  }
+  &:checked:hover { background-color: mt(accent_soft_hover); }
+}
+// gtk-4.0: viewswitcher natvrdo generovaný akcent u toggle:checked
+viewswitcher.wide button.toggle:checked {
+  background-color: mt(accent_soft);
+  color: mt(accent_text);
+}
+
+// -----------------------------------------------------------------------------
+// Drobnosti: separátory, rámy, linky
+// -----------------------------------------------------------------------------
+separator { background-color: mt(hairline); }
+
+// Paned: jedna 1px linka (Orchis kreslí hairline přes background-image a naše obecné
+// pravidlo separator přidalo druhou). Hit area (padding 8px) zůstává, výplň jen v content-boxu.
+paned > separator {
+  background-image: none;
+  background-color: mt(border);
+  background-clip: content-box;
+  min-width: 1px;
+  min-height: 1px;
+  border: none;
+}
+
+@if $gtk == 3 {
+  // Obrysové chevrony místo plných trojúhelníků pan-*. url() v -gtk-icon-source GTK3 roztáhne
+  // do alokace (písmeno V), proto -gtk-icontheme: ikony jdou přes install.sh do hicolor.
+  treeview.view.expander,
+  expander title > arrow {
+    -gtk-icon-source: -gtk-icontheme("mentha-chevron-right-symbolic");
+    -gtk-icon-transform: none;
+    min-width: 16px;
+    min-height: 16px;
+    color: mt(fg_muted);
+
+    &:hover { color: mt(fg); }
+    &:checked { -gtk-icon-source: -gtk-icontheme("mentha-chevron-down-symbolic"); }
+    &:dir(rtl) { -gtk-icon-source: -gtk-icontheme("mentha-chevron-left-symbolic"); }
+    &:dir(rtl):checked { -gtk-icon-source: -gtk-icontheme("mentha-chevron-down-symbolic"); }
+  }
+
+  menu menuitem arrow:dir(ltr), popover modelbutton.flat arrow.right {
+    -gtk-icon-source: -gtk-icontheme("mentha-chevron-right-symbolic");
+  }
+  menu menuitem arrow:dir(rtl), popover modelbutton.flat arrow.left {
+    -gtk-icon-source: -gtk-icontheme("mentha-chevron-left-symbolic");
+  }
+  menu menuitem arrow, popover modelbutton.flat arrow {
+    min-width: 16px;
+    min-height: 16px;
+    color: mt(fg_muted);
+  }
+
+  combobox arrow, button.combo arrow {
+    -gtk-icon-source: -gtk-icontheme("mentha-chevron-down-symbolic");
+    min-width: 16px;
+    min-height: 16px;
+    color: mt(fg_muted);
+  }
+  combobox button:hover arrow, button.combo:hover arrow { color: mt(fg); }
+
+  // GtkImage šipky (menubutton, hlavička řazení) -gtk-icon-source neberou: ikonu schováme
+  // a chevron kreslíme přes pozadí
+  button.popup > box > image:last-child,
+  button.popup > image:only-child,
+  treeview.view header button > box > image {
+    -gtk-icon-transform: scale(0);
+    min-width: 16px;
+    min-height: 16px;
+    background-image: -gtk-recolor(url("assets/mentha-chevron-down-symbolic.svg"));
+    background-size: 16px 16px;
+    background-position: center;
+    background-repeat: no-repeat;
+    color: mt(fg_muted);
+  }
+}
+
+// ActionBar a obecný statusbar: ploché textové tlačítko v běžné barvě (ne jako disabled)
+actionbar button.flat.text-button, actionbar button.flat:not(.image-button) { color: mt(fg); }
+actionbar button.flat:hover { background-color: mt(hover); }
+actionbar > revealer > box button:not(.suggested-action):not(.destructive-action):not(.image-button) { color: mt(fg); }
+actionbar > revealer > box button:not(.suggested-action):not(.destructive-action):not(.image-button):hover { background-color: mt(hover); }
+
+statusbar, statusbar label { color: mt(fg_muted); }
+statusbar button { min-height: 24px; padding: 0 6px; border-radius: mt-radius(xs); box-shadow: none; }
+statusbar button:hover { background-color: mt(hover); color: mt(fg); }
+statusbar button:checked { background-color: mt(accent_soft); }
+
+@if $gtk == 3 {
+  // Inline toolbar (gnome-disks): zaoblená tlačítka s odstupem od hrany
+  .inline-toolbar button { border-radius: mt-radius(sm); margin: 4px 2px; }
+
+  // TextView v rámečku: vnitřní odsazení a zaoblení jako entry. Xed (sourceview) a Nemo
+  // vynechány, aby se neposunul gutter.
+  // LIMIT GTK3 (gtktextview.c:4866-4895, text_window_set_padding): padding i border textview se přičítají
+  // k posouvanému obsahu, takže při posunu odjedou s textem. CSS margin na dítěti scrolledwindow GTK3
+  // ignoruje (ověřeno kolo 7) a padding rámu nejde, rám nelze rozlišit podle dítěte (rámované seznamy).
+  scrolledwindow.frame > textview.view:not(.sourceview) { padding: 6px 8px; }
+  // podklad drží view; průhledný text node, jinak při horizontálním posunu zůstane v paddingu díra (černý pruh v Broadway)
+  scrolledwindow.frame > textview.view:not(.sourceview) > text { background-color: transparent; }
+  // rám má jediný vlastník (scrolledwindow), textview už vlastní obrys nekreslí (jinak dvojitá hrana).
+  // LIMIT GTK3: bez :has nejde rám rozlišit podle dítěte, proto border_strong (>= 3:1, jako entry)
+  // mají textview i všechny rámované seznamy (CTRL-705, A11Y-706).
+  // výplň surface_alt nese textview (r 9 = vnitřní oblouk rámu r 10), ne rám: výplň rámu by
+  // prosvítala pod rgba výběrem a hoverem rámovaných seznamů. Klasické posuvníky textview mají
+  // stejnou plochu bez linky a záporným okrajem 9 px (vyrovnaným paddingem) překryjí zaoblené
+  // rohy textview, které k nim přiléhají; vnější rohy rámu dostanou oblouk r 9.
+  scrolledwindow.frame { border-color: mt(border_strong); border-radius: mt-radius(sm); }
+  scrolledwindow.frame > textview.view:not(.sourceview) { background-color: mt(surface_alt); border-radius: 9px; }
+  scrolledwindow.frame > textview.view:not(.sourceview) ~ scrollbar,
+  scrolledwindow.frame > textview.view:not(.sourceview) ~ junction { background-color: mt(surface_alt); border-color: transparent; }
+  scrolledwindow.frame > textview.view:not(.sourceview) ~ scrollbar.horizontal { margin-top: -9px; padding-top: 9px; border-radius: 0 0 9px 9px; }
+  scrolledwindow.frame > textview.view:not(.sourceview) ~ scrollbar.vertical { margin-left: -9px; padding-left: 9px; border-radius: 0 9px 9px 0; }
+  scrolledwindow.frame > textview.view:not(.sourceview) ~ junction { border: none; border-radius: 0 0 9px 0; }
+  // oba posuvníky: svislý se protáhne přes junction (17 px = výška vodorovného), zakryje jeho
+  // zaoblený pravý konec i vlastní spodní oblouk nad junction; oblouk r 9 nese až v rohu rámu
+  scrolledwindow.frame > textview.view:not(.sourceview) ~ scrollbar.horizontal ~ scrollbar.vertical { margin-bottom: -17px; padding-bottom: 17px; }
+  scrolledwindow.frame > textview.view:not(.sourceview) ~ undershoot { background: none; }
+  // GTK3 nemá :focus-within, prstenec kreslí přímo textview
+  scrolledwindow.frame > textview.view:not(.sourceview):focus { box-shadow: $mt-ring-focus; border-radius: 9px; }
+  frame > border { border-color: mt(border); border-radius: mt-radius(sm); }
+  // popisek rámu mimo oblouk rohu (8 px od linky)
+  frame > label { margin: 0 12px; }
+  // XApp SettingsSection (Nastavení systému, nastavení appletů): frame.view > box > box > list. GTK3 potomky neořezává
+  // radiusem, hranaté neprůhledné seznamy proto přemalovaly oblouky rohů rámu. Pozadí nese rám, seznamy jsou průhledné
+  // a krajní řádky mají vnitřní radius (hover nevyteče přes roh)
+  frame.view { border-radius: mt-radius(sm); }
+  frame.view > box > box > list { background-color: transparent; }
+  frame.view > box > box:first-child > list > row { border-radius: mt-radius(sm) - 1px mt-radius(sm) - 1px 0 0; }
+  frame.view > box > box:last-child > list > row { border-radius: 0 0 mt-radius(sm) - 1px mt-radius(sm) - 1px; }
+  frame.view > box > box:only-child > list > row { border-radius: mt-radius(sm) - 1px; }
+  // Předvolby Terminálu: obsah vedle sidebaru je karta zaoblená jen vpravo (vlevo lícuje se sidebarem)
+  box.horizontal > stack > eventbox > frame > border { border-radius: 0 mt-radius(md) mt-radius(md) 0; }
+  // location entry v toolbaru (file-roller): stejná hrana jako ostatní pole
+  toolbar entry, .toolbar entry { box-shadow: $mt-ring-field; border-radius: mt-radius(sm); }
+  .inline-toolbar .linked > button.destructive-action,
+  .inline-toolbar toolitem > button.destructive-action,
+  .inline-toolbar button.destructive-action { border-radius: mt-radius(sm); margin: 4px; }
+}
+
+link,
+*:link { color: mt(accent_text); }
+*:visited { color: mt(accent_pressed); }
+button.link:disabled, button.link:disabled label, *:link:disabled { color: mt(fg_disabled); }
+
+// InfoBar: tónovaná karta s 3 px pruhem, text v běžné barvě (Orchis maluje plnou
+// plochu a bílý text; selektor stejně dlouhý jako Orchisův, aby ho přebil)
+@mixin mt-infobar($types, $tint, $bar) {
+  @each $t in $types {
+    infobar.#{$t} > revealer > box,
+    infobar.#{$t}:backdrop > revealer > box,
+    infobar.#{$t}:hover > revealer > box {
+      background-color: $tint;
+      color: mt(fg);
+      border-radius: mt-radius(md);   // celá karta zaoblená, pruh vlevo je vnitřní stín (Win11 InfoBar)
+      padding: 8px 12px 8px 15px;
+      box-shadow: inset 3px 0 0 $bar;
+      border: none;
+    }
+    infobar.#{$t} > revealer > box label,
+    infobar.#{$t}:backdrop > revealer > box label { color: mt(fg); }
+    infobar.#{$t} > revealer > box button,
+    infobar.#{$t} > revealer > box button:hover,
+    infobar.#{$t} > revealer > box button:focus,
+    infobar.#{$t} > revealer > box button:active,
+    infobar.#{$t} > revealer > box button:checked,
+    infobar.#{$t} > revealer > box button.text-button:not(:disabled),
+    infobar.#{$t}:backdrop > revealer > box button,
+    infobar.#{$t}:backdrop > revealer > box button:hover,
+    infobar.#{$t}:backdrop > revealer > box button:focus,
+    infobar.#{$t}:backdrop > revealer > box button:active,
+    infobar.#{$t}:backdrop > revealer > box button:checked,
+    infobar.#{$t}:backdrop > revealer > box button.text-button:not(:disabled) {
+      background-color: mt(surface);
+      background-image: none;
+      color: mt(fg);
+      box-shadow: $mt-ring-border;
+    }
+    infobar.#{$t} > revealer > box button:hover,
+    infobar.#{$t}:backdrop > revealer > box button:hover { background-color: mt(hover); }
+    infobar.#{$t} > revealer > box *:link,
+    infobar.#{$t}:backdrop > revealer > box *:link { color: mt(accent_text); }
+  }
+}
+// info (azurová, informace) a question/action (akcent, vyžaduje odpověď) se liší tónem i proužkem
+@include mt-infobar(info, mix(mt(info), mt(surface), 12%), mt(info));
+@include mt-infobar(action question, mt(accent_soft), mt(accent));
+@include mt-infobar(warning, rgba(mt(warning), 0.16), mt(warning));
+@include mt-infobar(error, rgba(mt(error), 0.14), mt(error));
+
+infobar > revealer > box button.flat image,
+infobar > revealer > box button image { color: mt(fg_muted); }
+// zapnutý přepínač v hledání Nema (Aa, .*, ↳): glyf v accent_text jako text tlačítka, ne fg_muted
+.nemo-window infobar > revealer > box button:checked image { color: mt(accent_text); }
+
+// zavírací × je ploché 24px tlačítko bez rámečku
+infobar > revealer > box button.close,
+infobar > revealer > box button.close:hover,
+infobar > revealer > box button.close:focus,
+infobar > revealer > box button.close:active,
+infobar.info > revealer > box button.close,
+infobar.warning > revealer > box button.close,
+infobar.error > revealer > box button.close,
+infobar.question > revealer > box button.close,
+infobar.action > revealer > box button.close,
+infobar > revealer > box button.close:backdrop {
+  box-shadow: none;
+  background: none;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 4px;
+}
+infobar > revealer > box button.close:hover,
+infobar.info > revealer > box button.close:hover,
+infobar.warning > revealer > box button.close:hover,
+infobar.error > revealer > box button.close:hover,
+infobar.question > revealer > box button.close:hover,
+infobar.action > revealer > box button.close:hover { background-color: mt(hover); }
+
+// -----------------------------------------------------------------------------
+// Notebook: pilulky na surface_alt liště místo kartotéky
+// -----------------------------------------------------------------------------
+notebook > header {
+  background-color: mt(surface_alt);
+  padding: 4px 4px 0;   // karty sedí na dolní hraně lišty a splývají se stránkou
+  border: none;
+  box-shadow: none;
+
+  // Orchis posouvá karty dolů (margin-top 4, margin-bottom -1): na střed lišty
+  &.top > tabs, &.bottom > tabs { margin: 0; }
+
+  &.bottom { padding: 0 4px 4px; }
+
+  > tabs > tab {
+    min-height: 32px;
+    padding: 0 12px;
+    margin: 0 2px;
+    border: none;
+    border-image: none;
+    border-radius: mt-radius(sm) mt-radius(sm) 0 0;
+    box-shadow: none;
+    background-color: transparent;
+    color: mt(fg_muted);
+
+    &:hover { background-color: mt(hover); color: mt(fg); }
+    // stejná logika v Light i Dark: karta = plocha stránky (surface) s hairline obrysem; spodní hranu kryje stránka
+    &:checked {
+      background-color: mt(surface);
+      color: mt(fg);
+      font-weight: 600;
+      box-shadow: inset 0 0 0 1px mt(border);
+    }
+
+    button.flat {
+      min-width: 20px;
+      min-height: 20px;
+      padding: 0;
+      color: mt(fg_muted);
+      border-radius: mt-radius(pill);
+
+      &:hover { background-color: mt(hover); color: mt(fg); }
+    }
+  }
+
+  &.bottom > tabs > tab { border-radius: 0 0 mt-radius(sm) mt-radius(sm); }
+  &.left > tabs > tab, &.right > tabs > tab { margin: 2px 0; border-radius: mt-radius(sm); }
+}
+// notebook v dialogu (Vlastnosti): průhledná lišta a rámovaná stránka, karty zůstávají pilulky
+dialog notebook > header, messagedialog notebook > header { padding: 4px; }
+dialog notebook > header > tabs > tab, messagedialog notebook > header > tabs > tab {
+  min-height: 28px;
+  border-radius: mt-radius(sm);
+}
+dialog notebook > header > tabs > tab:checked, messagedialog notebook > header > tabs > tab:checked { background-color: mt(surface_raised); }
+// × neaktivní karty tlumeně (obecná pravidla tlačítek v okně jí dávají fg), hover a aktivní karta fg
+notebook > header > tabs > tab:not(:checked) button,
+notebook > header > tabs > tab:not(:checked) button.flat,
+notebook > header > tabs > tab:not(:checked) button image { color: mt(fg_muted); opacity: 0.7; }
+notebook > header > tabs > tab:not(:checked) button:hover,
+notebook > header > tabs > tab:not(:checked) button:hover image { color: mt(fg); opacity: 1; }
+// Karty Nema a xed jsou reorderable: Orchis `notebook > header tab:checked.reorderable-page` (0,2,3) přebije
+// výplň karty. Vrací se stejná logika jako u ostatních notebooků: aktivní karta = plocha stránky s obrysem.
+notebook > header > tabs > tab:checked.reorderable-page { background-color: mt(surface); }
+
+// -----------------------------------------------------------------------------
+// Dialogy: okraje 16 px, mezera tlačítek 8 px (GTK3)
+// -----------------------------------------------------------------------------
+@if $gtk == 3 {
+  // Okraj 16 px má jediný vlastník (dialog-vbox); action box je jeho potomek a přidává jen
+  // mezeru 12 px nad tlačítky, takže tlačítka lícují s obsahem (GtkDialog je v GTK3 uzel dialog)
+  dialog .dialog-action-area, .dialog-action-area { margin: 0; padding: 0; }
+  // GtkButtonBox ze šablony gtkdialog.ui má spacing 6 px: 6 + 2 = 8 px mezi tlačítky
+  .dialog-action-area > button:not(:last-child) { margin-right: 2px; }
+  // GtkDialog má ze šablony border-width 5 px (mimo CSS), proto 11 + 5 = 16 px
+  dialog:not(.filechooser):not(.colorchooser) .dialog-vbox { margin: 0; padding: 11px; }
+  dialog.colorchooser .dialog-vbox { padding: 0; }
+  // notebook v dialogu: jedna linka 16 px s tlačítky, stránka průhledná s 1px rámem (Light i Dark stejně);
+  // Orchis maluje i uzel notebook ($base), v Dark by stránka byla "jáma" pod dialog_bg
+  dialog notebook, messagedialog notebook { background-color: transparent; }
+  // Vlastnosti v Nemo 6: místo notebooku toolbar se stackswitcherem a frame se stránkou; Orchis je maluje $base
+  dialog .dialog-vbox > toolbar, dialog .dialog-vbox > frame, dialog .dialog-vbox > frame > * { background-color: transparent; }
+  dialog notebook > header, messagedialog notebook > header { background-color: transparent; }
+  dialog notebook > stack:not(:only-child), messagedialog notebook > stack:not(:only-child) {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 1px mt(border);
+    border-radius: mt-radius(sm);
+  }
+  // 7 + 5 px (spacing dialog-vbox a okraj GtkDialog mimo CSS) = 12 px mezi obsahem a tlačítky
+  dialog .dialog-action-box { margin: 0; padding: 7px 0 0; }
+  dialog.filechooser .dialog-action-box, dialog.colorchooser .dialog-action-box { padding: 12px 11px 11px; }
+  // FileChooserDialog třídu .filechooser v GTK3 nemá (výjimka výše nezabere) -> sidebar by plaval v rámu 11 px.
+  // Obsah vrací odsazení dialog-vboxu zápornými okraji: sidebar a seznam lícují s okrajem okna, tlačítka mají
+  // vlastní lištu s linkou jako pod pathbarem (6 + 6 px okraj action-area = 12 px nad i pod tlačítky, 16 px vpravo).
+  // Bez lišty tlačítek (dialog s headerbarem) sahá výběr souborů až dolů.
+  dialog .dialog-vbox > filechooser { margin: -11px; }
+  // řádek filtru (GtkActionBar ve filechooseru): combo lícuje s Otevřít (16 px), 12 px nad i pod
+  filechooser > actionbar > revealer > box { padding: 12px 16px; }
+  // About a ColorChooser mají ze šablony border-width 5 na dialogu (+ 2 obsah, + 1 zaokr.), mimo CSS:
+  // bez kompenzace by tlačítka i mřížka byly 24 px od rámu. Třídy .aboutdialog/.colorchooser
+  // na uzlu dialog v GTK3 nejsou, proto struktura: About = jediný box.vertical před action boxem.
+  dialog .dialog-vbox > colorchooser { margin: -8px -8px 0; }
+  dialog .dialog-vbox > colorchooser + .dialog-action-box,
+  dialog .dialog-vbox > box.vertical:first-child:nth-last-child(2) + .dialog-action-box { margin: 0 -8px -8px; }
+  dialog .dialog-vbox > filechooser + .dialog-action-box {
+    margin: 11px -11px -11px;
+    padding: 6px 10px;
+    // linku nad filtrem kreslí GtkActionBar filechooseru; druhá nad tlačítky by tvořila dvojitou linku
+    border-top: none;
+  }
+
+  // GtkColorChooserDialog nedává tlačítku .suggested-action, jen .default: potvrzení v akcentu jako v ostatních dialozích
+  dialog .dialog-vbox > colorchooser + .dialog-action-box button.default {
+    background-color: mt(accent);
+    background-image: none;
+    box-shadow: none;
+    color: mt(accent_fg);
+
+    &:hover { background-color: mt(accent_hover); }
+    &:active { background-color: mt(accent_pressed); }
+    &:focus { box-shadow: none; outline: $mt-outline; outline-offset: 2px; @include mt-ol(mt-radius(md)); }
+  }
+
+  // MessageDialog má vlastní okraje, nesčítat s obecnými
+  // šablona dává action area okraj 6 px navíc (okraj tlačítek 22 px): záporný margin vrací 16 px
+  messagedialog .dialog-action-area { margin: 0 -6px -6px; }
+  messagedialog .dialog-action-box { padding: 0 16px 16px; margin: 0; }
+  messagedialog.csd .dialog-action-box { margin-top: 0; }
+
+  messagedialog.csd .dialog-action-box button,
+  messagedialog.csd .dialog-action-box button:first-child,
+  messagedialog.csd .dialog-action-box button:last-child,
+  messagedialog.csd .dialog-action-box button:not(:disabled) {
+    min-height: 34px;
+    padding: 0 16px;
+    border-radius: mt-radius(sm);
+    box-shadow: $mt-ring-border;
+    background-color: transparent;
+    background-image: none;
+    color: mt(fg);
+
+    &:hover { background-color: mt(hover); }
+    // outline GTK3 kreslí jen při klávesnicovém fokusu (výchozí tlačítko po otevření bez prstence)
+    &:focus { box-shadow: $mt-ring-border; outline: $mt-outline; outline-offset: -2px; @include mt-ol(mt-radius(sm)); }
+  }
+  messagedialog.csd .dialog-action-box button:not(:last-child) { margin-right: 8px; }
+
+  messagedialog.csd .dialog-action-box button.suggested-action,
+  messagedialog.csd .dialog-action-box button.suggested-action:not(:disabled) {
+    background-color: mt(accent);
+    color: mt(accent_fg);
+    box-shadow: none;
+
+    &:hover { background-color: mt(accent_hover); }
+    &:focus { box-shadow: none; outline: $mt-outline; outline-offset: 2px; @include mt-ol(mt-radius(sm)); }
+  }
+  messagedialog.csd .dialog-action-box button.destructive-action,
+  messagedialog.csd .dialog-action-box button.destructive-action:not(:disabled) {
+    background-color: mt(error);
+    color: mt(error_fg);
+    box-shadow: none;
+
+    &:hover { background-color: mt(error_hover); }
+    &:focus { box-shadow: none; outline: 2px solid mt(error); outline-offset: 2px; @include mt-ol(mt-radius(sm)); }
+  }
+}
+
+// plocha dialogů: v Dark o stupeň výš než rodičovské okno (elevace)
+messagedialog.background,
+dialog.background {
+  background-color: mt(dialog_bg);
+}
+@if $gtk == 3 {
+  // Předvolby jako obyčejné GtkWindow (Nemo file_management_dialog, Terminál, XAppPreferencesWindow)
+  // zůstávají celé surface. LIMIT (D3): na X11 jim titulek kreslí Muffin (SSD) bez rozlišení okna,
+  // takže tělo v dialog_bg by pod titulkem surface udělalo v Dark šev přes celou šířku.
+  // Terminál (preferences-dialog): seznam vlevo tónovaný jako sidebar
+  box.horizontal > frame:first-child > scrolledwindow:not(.frame) > viewport > list:not(.boxed-list) { background-color: mt(surface_alt); }
+}
+messagedialog .titlebar, messagedialog .titlebar:backdrop,
+dialog > headerbar.titlebar, dialog > .titlebar,
+dialog > headerbar.titlebar:backdrop, dialog > .titlebar:backdrop {
+  background-color: mt(dialog_bg);
+}
+
+// gnome-disks: seznam zařízení jako ostatní sidebary (surface_alt, výběr selection_sidebar).
+// Widgety z disks.ui nemají CSS jméno (GtkBuilder ID selektor netrefí), proto struktura leaflet > box > scrolledwindow
+@if $gtk == 3 {
+  // vysoká specificita: aplikační CSS i pravidla treeview.view motivu jinak vyhrají
+  $disks-list: 'window.csd.background.unified deck box leaflet box scrolledwindow treeview.view.view.view';
+  #{$disks-list} { background-color: mt(surface_alt); -GtkTreeView-vertical-separator: 4; }
+  #{$disks-list}:selected, #{$disks-list}:selected:focus, #{$disks-list}:selected:hover {
+    background-color: mt(selection_sidebar);
+    color: mt(selection_text);
+  }
+}
+// gnome-disks, mapa svazků (LIMIT A11Y-704): vybraný oddíl kreslí gdu.css přechodem z @theme_selected_bg_color
+// (aplikační CSS má přednost) a text bere bez stavu :selected, tedy theme_fg. Dark #EAF0FB na ~#4276C1 = 3,96:1.
+// Pravidlo `.gnome-disk-utility-grid:selected { color }` na text nepůsobí (ověřeno snímkem 41 v kole 8).
+
+// FileChooser: od hlavičky po tlačítka jedna plocha (surface), jen sidebar je tónovaný
+@if $gtk == 3 {
+  // jeden tón dialogu bez vnořené karty; sidebar zůstává surface_alt
+  dialog.filechooser, dialog.filechooser .dialog-action-area, dialog.filechooser headerbar,
+  dialog.filechooser > headerbar.titlebar, dialog.filechooser > headerbar.titlebar:backdrop,
+  filechooser, filechooser .view, filechooser paned > box,
+  .csd filechooser, filechooser #pathbarbox, filechooser #pathbarbox > stack, filechooser #pathbarbox > stack > box { background-color: mt(dialog_bg); }
+  filechooser placessidebar, filechooser placessidebar list, filechooser placessidebar viewport,
+  filechooser .sidebar, filechooser placessidebar.sidebar { background-color: mt(surface_alt); }
+  // záhlaví sloupců na ploše dialogu (Orchis je maluje tmavým $base)
+  filechooser treeview.view header button, filechooser treeview.view header button:disabled { background-color: mt(dialog_bg); }
+  // text hlavičky lícuje s obsahem sloupce (buňka xpad + horizontal-separator/2 = 11 px od hrany sloupce)
+  filechooser treeview.view header button { padding-left: 11px; padding-right: 11px; }
+  // obrys dialogu proti rodiči (v Dark splývá tónem)
+  window.dialog decoration, dialog decoration { box-shadow: 0 0 0 1px mt(border), mt(shadow_window); }
+
+  // ColorChooser: vzorek s obrysem, tlačítko + stejné v Light i Dark
+  colorswatch { box-shadow: inset 0 0 0 1px mt(border); }
+  colorswatch overlay { box-shadow: inset 0 0 0 1px mt(hairline); border-radius: inherit; }
+  // GtkColorButton: Orchis dává swatchi radius 16 px (první i poslední dítě) a vzorek se roztáhne do
+  // pilulky přes celé tlačítko; vzorek 20x20 s radiusem xs a viditelným obrysem se čte jako barva (PLSH-718)
+  // vzorek má přirozenou velikost 32x22 (min-size ho nezmenší); padding 5 px svisle: 22 + 2x5 + rám 2 = 34 px jako
+  // FontButton a ostatní ovladače (CTRL-712). Radius přes :first-child:last-child, Orchis `colorswatch:first-child:not(.top)`
+  // (0,2,1) by jinak vrátil 16 px pilulku
+  button.color { padding: 5px 7px; }
+  button.color colorswatch:first-child:last-child:not(.top):not(.bottom),
+  button.color colorswatch:first-child:last-child:not(.top):not(.bottom) overlay { border-radius: mt-radius(xs); }
+  button.color colorswatch { box-shadow: none; }
+  button.color colorswatch overlay { box-shadow: inset 0 0 0 1px mt(control_border); }
+  // ikona otázky/varování v MessageDialogu je plná barevná (dialog-question) a text vedle ní nesedí na středu
+  // dialogu. GtkBox nepustí slot ikony pod 54 px (12 + 42; záporný margin-right ho oříznul na tuto mez), proto se ikona
+  // skryje a blok textu se o slot posune zpět doleva. Dialog bez ikony (MessageType.OTHER) nese -27 px (LIMIT, CSS
+  // neodliší skrytou ikonu).
+  messagedialog .dialog-vbox image, messagedialog box.horizontal > image {
+    -gtk-icon-style: symbolic;
+    color: mt(accent);
+    opacity: 0;
+    min-width: 0;
+    margin-right: -112px;
+  }
+  messagedialog box.horizontal > box:not(.dialog-action-box) { margin-left: -54px; }
+  // xed: vzduch nad textem a od gutteru
+  .xed-window textview.view.sourceview, textview.sourceview { padding: 8px 0 0 8px; }
+  // About dialog: název výrazně větší než verze
+  // GtkAboutDialog je v GTK3 uzel dialog bez třídy a name_label nemá třídu; logo před ním má .icon-dropshadow (gtkaboutdialog.ui)
+  dialog .dialog-vbox image.icon-dropshadow + label { font-size: 15pt; font-weight: 700; }
+  aboutdialog .title, aboutdialog label.title { font-size: 15pt; font-weight: 700; }
+  colorswatch#add-color-button { background-color: mt(surface_alt); color: mt(fg); }
+  colorswatch#add-color-button overlay { background-color: mt(surface_alt); }
+  colorswatch#add-color-button:hover { background-color: mt(hover); }
+}
+
+// -----------------------------------------------------------------------------
+// Typografické třídy (GTK3 je nemá; v GTK4 je dodává libadwaita-like část Orchisu)
+// -----------------------------------------------------------------------------
+@if $gtk == 3 {
+  .title-1 { font-size: 20pt; font-weight: 800; }
+  .title-2 { font-size: 15pt; font-weight: 800; }
+  .title-3 { font-size: 15pt; font-weight: 700; }
+  .title-4 { font-size: 13pt; font-weight: 700; }
+  .heading { font-weight: 700; }
+  .caption { font-size: 0.82em; }
+  .caption-heading { font-size: 0.82em; font-weight: 700; }
+}

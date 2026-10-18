@@ -1,0 +1,41 @@
+; Šablona motivu Albert (widgetsboxmodel). Jen odkazy $token, žádné hex barvy.
+; tools/albert-theme.py před ni vloží definice použitých tokenů (base + accents.<akcent>)
+; a odvozené barvy (text_sel_entry, shadow_popup). Geometrie (radiusy, písmo, stín) je
+; v geometry.ini.in, protože Albert ji drží v configu, ne v motivu.
+
+[palette]
+base=$surface_alt
+text=$fg
+window=$surface_raised
+window_text=$fg
+button=$surface_alt
+button_text=$fg
+; výběr textu v poli: stejný mix jako entry v GTK ($mt-text-sel-entry), text zůstává fg
+highlight=$text_sel_entry
+highlight_text=$fg
+placeholder_text=$fg_muted
+link=$accent_text
+link_visited=$accent_text
+
+[window]
+; okno = popover Menthy: surface_raised, 1px border, stín shadow_popup
+window_shadow_brush=$shadow_popup
+window_background_brush=$surface_raised
+window_border_brush=$border
+input_background_brush=$surface_alt
+input_border_brush=$control_border
+input_trigger_color=$accent_text
+input_hint_color=$fg_muted
+settings_button_color=$border_strong
+settings_button_highlight_color=$accent
+; výběr = pilulka Nemo sidebaru, bez gradientu; podtext selection_text (fg_muted má v Dark jen 3,8:1)
+result_item_selection_background_brush=$selection_sidebar
+result_item_selection_border_brush=$selection_sidebar
+result_item_selection_text_color=$selection_text
+result_item_selection_subtext_color=$selection_text
+result_item_text_color=$fg
+result_item_subtext_color=$fg_muted
+action_item_selection_background_brush=$selection_sidebar
+action_item_selection_border_brush=$selection_sidebar
+action_item_selection_text_color=$selection_text
+action_item_text_color=$fg

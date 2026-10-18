@@ -1,0 +1,89 @@
+// Mentha: přepíše základní barvy Orchisu hodnotami z tokenů.
+// Importuje se na ÚPLNÝ KONEC _colors.scss, takže přepíše i všechny odvozené proměnné.
+// Vyžaduje $variant ('light'|'dark') a _mentha-tokens.scss.
+@import 'mentha-tokens';
+
+// --- povrchy ---------------------------------------------------------------
+// Okno splývá s obsahem (viz mockup): okno, view i headerbar = surface.
+$background:                            mt(surface);
+$surface:                               mt(surface);
+$base:                                  mt(surface);
+$base-alt:                              mt(surface_alt);
+$popover:                               mt(surface_raised);
+$titlebar:                              mt(surface);
+$titlebar-backdrop:                     mt(surface);
+$tooltip:                               mt(tooltip_bg);
+$osd:                                   mt(tooltip_bg);
+$scrim:                                 mt(bg);
+$scrim-alt:                             mt(surface_alt);
+$keyboard:                              mt(surface_raised);
+$keyboard-alt:                          mt(surface_alt);
+$system:                                mt(surface_alt);
+$panel-solid:                           mt(surface);
+$panel:                                 mt(surface);
+$shell:                                 mt(surface);
+
+// --- akcent a sémantické barvy ---------------------------------------------
+$primary:                               mt(accent);
+$primary-fixed:                         mt(accent);
+$link:                                  mt(accent_text);
+$link-visited:                          mt(accent_pressed);
+$warning:                               mt(warning);
+$error:                                 mt(error);
+$success:                               mt(success);
+$suggested:                             mt(accent);
+$destructive:                           mt(error);
+$drop_target_color:                     mt(warning);
+$check_radio_primary:                   mt(accent);
+$titlebar-indicator:                    mt(accent);
+
+// --- čáry ------------------------------------------------------------------
+$frame:                                 mt(border);
+$border:                                mt(hairline);
+$solid-border:                          mt(border);
+$border-alt:                            mt(border);
+
+// --- text a odvozené -------------------------------------------------------
+$text:                                  mt(fg);
+$text-secondary:                        mt(fg_muted);
+$text-disabled:                         mt(fg_disabled);
+$text-secondary-disabled:               mt(fg_disabled);
+$track:                                 mt(border);
+$track-disabled:                        mt(border);
+$divider:                               mt(hairline);
+$secondary-fill:                        mt(active);
+$fill:                                  mt(hover);
+
+$titlebar-text:                         mt(fg);
+$titlebar-text-secondary:               mt(fg_muted);
+$titlebar-text-disabled:                mt(fg_disabled);
+$titlebar-text-secondary-disabled:      mt(fg_disabled);
+$titlebar-track:                        mt(border);
+$titlebar-track-disabled:               mt(border);
+$titlebar-divider:                      mt(hairline);
+$titlebar-secondary-fill:               mt(active);
+$titlebar-fill:                         mt(hover);
+
+// text na akcentu: accent_fg s Orchisovými průhlednostmi
+$primary-text:                          mt(accent_fg);
+$primary-text-secondary:                rgba(mt(accent_fg), 0.7);
+$primary-text-disabled:                 rgba(mt(accent_fg), 0.5);
+$primary-text-secondary-disabled:       rgba(mt(accent_fg), 0.3);
+$primary-track:                         rgba(mt(accent_fg), 0.3);
+$primary-track-disabled:                rgba(mt(accent_fg), 0.15);
+$primary-divider:                       rgba(mt(accent_fg), 0.12);
+$primary-secondary-fill:                rgba(mt(accent_fg), 0.08);
+$primary-fill:                          rgba(mt(accent_fg), 0.04);
+
+// GTK3 @placeholder_text_color nesnese průhlednost
+$placeholder_text_color:                mt(fg_muted);
+
+$titlebutton-close:                     mt(error);
+$titlebutton-max:                       mt(success);
+$titlebutton-min:                       mt(warning);
+
+// Orchisova paleta se používá i mimo akcent (gnome-4.0 apps, @blue_3, budgie): sjednotit na tokeny
+$blue-dark:   mt(accent);
+$blue-light:  mt(accent);
+$sea-dark:    mt(success);
+$sea-light:   mt(success);

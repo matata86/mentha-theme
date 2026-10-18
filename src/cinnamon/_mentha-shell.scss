@@ -1,0 +1,732 @@
+// ============================================================================
+// Mentha shell layer: připojuje se ZA upstream Mint-Y (_common/_dialogs/...) a přepisuje vzhled.
+// Vše z tokenů (mt()). Barva akcentu se nikde nepíše natvrdo.
+//
+// St (Cinnamon toolkit) NEUMÍ: text-transform, backdrop-filter, linear-gradient(), opacity, filter,
+// transform, :nth-child(n>1), CSS proměnné, calc(). Gradient jen background-gradient-* (2 zarážky)
+// a -gradient-* na separátorech. Proto: žádný blur ostrovů (jen poloprůhledná výplň) a gradient
+// jen na .progress (GWL). BarLevel (OSD) a slidery kreslí cairo jen plnou barvou.
+// ============================================================================
+
+$m-bg: mt('bg');
+$m-surface: mt('surface');
+$m-alt: mt('surface_alt');
+$m-raised: mt('surface_raised');
+$m-border: mt('border');
+$m-hair: mt('hairline');
+$m-hover: mt('hover');
+$m-active: mt('active');
+$m-fg: mt('fg');
+$m-muted: mt('fg_muted');
+$m-disabled: mt('fg_disabled');
+$m-acc: mt('accent');
+$m-acc-hover: mt('accent_hover');
+$m-acc-pressed: mt('accent_pressed');
+$m-acc-fg: mt('accent_fg');
+$m-acc-text: mt('accent_text');
+$m-soft: mt('accent_soft');
+$m-sel: mt('selection');
+$m-focus: mt('focus');
+$m-err: mt('error');
+$m-err-fg: mt('error_fg');
+$m-warn: mt('warning');
+$m-clear: rgba(0, 0, 0, 0);
+$m-r-xs: mt-radius('xs');
+$m-r-sm: mt-radius('sm');
+$m-r-md: mt-radius('md');
+$m-r-lg: mt-radius('lg');
+$m-r-xl: mt-radius('xl');
+$m-pill: mt-radius('pill');
+
+// ---------------------------------------------------------------------------
+// 0. Základ
+// ---------------------------------------------------------------------------
+stage { color: $m-fg; }
+
+// ---------------------------------------------------------------------------
+// 1. Horní lišta = tři plovoucí ostrovy (zóny panelu hugují obsah), průhledný panel
+// ---------------------------------------------------------------------------
+#panel, .panel-top, .panel-bottom, .panel-left, .panel-right {
+  background-color: $m-clear;
+  background-gradient-direction: none;
+  border: none;
+  box-shadow: none;
+  color: $m-fg;
+  font-weight: normal;
+  font-size: 1em;
+  padding: 0;
+}
+#panel:highlight, .panel-dummy { background-color: $m-soft; }
+.panel-dummy:entered { background-color: $m-sel; }
+
+// stín musí zůstat v 3px okraji 32px panelu (clip při více monitorech) -> 0 1px 3px, ne tokenový shadow_island
+$m-island-shadow: if($variant == 'light', 0 1px 3px rgba(24, 40, 80, 0.16), 0 1px 3px rgba(0, 0, 0, 0.40));
+@mixin mentha-island($radius) {
+  background-color: mt('island');
+  border: 1px solid $m-hair;
+  border-radius: $radius;
+  box-shadow: $m-island-shadow;
+}
+
+.panel-top, .panel-bottom {
+  #panelLeft, .panelLeft, #panelCenter, .panelCenter, #panelRight, .panelRight,
+  #panelLeft:ltr, .panelLeft:ltr, #panelRight:ltr, .panelRight:ltr,
+  #panelLeft:rtl, .panelLeft:rtl, #panelRight:rtl, .panelRight:rtl {
+    @include mentha-island($m-pill);
+    margin: 3px 4px;
+    padding: 0 4px;
+    spacing: 2px;
+  }
+}
+
+// Svislý panel (dock): zóny průhledné, ostrov nese samotný dock (grouped-window-list), takže jde s ním
+// do kterékoli zóny (levá/střední/pravá). Ostrov na zóně by cornerbar zóně dal prázdný ostrov.
+.panel-left, .panel-right {
+  #panelLeft.vertical, .panelLeft.vertical, #panelCenter.vertical, .panelCenter.vertical, #panelRight.vertical, .panelRight.vertical,
+  #panelLeft.vertical:ltr, .panelLeft.vertical:ltr, #panelLeft.vertical:rtl, .panelLeft.vertical:rtl,
+  #panelRight.vertical:ltr, .panelRight.vertical:ltr, #panelRight.vertical:rtl, .panelRight.vertical:rtl {
+    background-color: $m-clear;
+    border: none;
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+    spacing: 4px;
+  }
+  // 6px mezi podkladem ikony a okrajem ostrova dokola; vodorovný margin 4px dává ostrovu vnitřní šířku 54 = 6 + 42 + 6
+  .grouped-window-list-box.vertical {
+    @include mentha-island($m-r-lg);
+    margin: 6px 4px;
+    padding: 6px 0;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 2. Applety v liště
+// ---------------------------------------------------------------------------
+.applet-box {
+  padding: 0 8px;
+  margin: 1px 0;
+  spacing: 5px;
+  border-radius: $m-pill;
+  color: $m-fg;
+  font-weight: normal;
+  font-feature-settings: "tnum";
+  text-shadow: none;
+  transition-duration: 100ms;
+}
+.applet-box.vertical { padding: 6px 0; margin: 0 1px; }
+.applet-box:hover { background-color: $m-hover; color: $m-fg; }
+.applet-box:checked { background-color: $m-soft; color: $m-acc-text; }
+.applet-box:highlight { background-image: none; border-image: none; background-color: $m-soft; }
+.applet-label { color: $m-fg; font-weight: normal; }
+.applet-label:hover, .applet-label:checked, .applet-box:hover .applet-label { color: $m-fg; text-shadow: none; }
+.applet-box:checked .applet-label, .applet-box:checked .applet-icon { color: $m-acc-text; }
+.applet-icon { color: $m-fg; icon-size: 18px; }
+.applet-icon:hover, .applet-box:hover > .applet-icon { color: $m-fg; text-shadow: none; }
+.system-status-icon { icon-size: 16px; padding: 0 1px; color: $m-fg; }
+.system-status-icon.warning { color: $m-warn; }
+.system-status-icon.error { color: $m-err; }
+.panel-status-button { border-width: 0; font-weight: normal; color: $m-fg; }
+.panel-button { font-weight: normal; color: $m-fg; transition-duration: 100ms; }
+
+.panel-top, .panel-bottom {
+  #panelCenter .applet-label, .panelCenter .applet-label { font-weight: 600; }
+  // tlačítko menu = plný akcentní čtvereček (první applet levé zóny; bez gradientu)
+  // čtverec 22x22 jako výška boxu: glyf „lm“ 14 (menu applet: menu-icon linuxmint-logo-simple-symbolic, menu-icon-size 14) + .system-status-icon padding 2x1 + 2x3
+  #panelLeft > .applet-box:first-child, .panelLeft > .applet-box:first-child {
+    background-color: $m-acc;
+    color: $m-acc-fg;
+    border-radius: 7px;
+    margin: 1px 4px 1px 0;
+    padding: 0 3px;
+  }
+  #panelLeft > .applet-box:first-child:hover, .panelLeft > .applet-box:first-child:hover { background-color: $m-acc-hover; }
+  #panelLeft > .applet-box:first-child:checked, .panelLeft > .applet-box:first-child:checked { background-color: $m-acc-pressed; color: $m-acc-fg; }
+  #panelLeft > .applet-box:first-child .applet-icon, .panelLeft > .applet-box:first-child .applet-icon,
+  #panelLeft > .applet-box:first-child .system-status-icon, .panelLeft > .applet-box:first-child .system-status-icon,
+  #panelLeft > .applet-box:first-child .applet-label, .panelLeft > .applet-box:first-child .applet-label { color: $m-acc-fg; }
+}
+
+.applet-separator { padding: 1px 4px; }
+.applet-separator-line { width: 1px; background: $m-hair; }
+.applet-separator-line-vertical { height: 1px; background: $m-hair; }
+.applet-cornerbar { width: 8px; background-color: $m-border; border: 1px solid $m-border; border-radius: $m-pill; }
+.applet-cornerbar-box:hover > .applet-cornerbar { background-color: $m-muted; }
+.panel-launchers .launcher:hover { background-color: $m-hover; border-radius: $m-r-sm; }
+
+// přepínač ploch v liště
+.workspace-button { border: 1px solid $m-border; border-radius: $m-r-xs; width: 2em; color: $m-muted; background-color: $m-clear; }
+.workspace-button:hover { background-color: $m-hover; }
+.workspace-button:outlined { background-color: $m-soft; color: $m-acc-text; border-color: $m-acc; }
+.workspace-button:outlined:hover { background-color: $m-sel; }
+.workspace-button:shaded { background-color: $m-hover; }
+.workspace-graph .workspace { border: 1px solid $m-border; background-color: $m-surface; border-radius: 3px; }
+.workspace-graph .workspace:active { border-color: $m-acc; }
+
+// ---------------------------------------------------------------------------
+// 3. Dock (grouped-window-list) – dlaždice 12px radius, indikátory přes okraj
+// ---------------------------------------------------------------------------
+.grouped-window-list-box { spacing: 4px; }
+.grouped-window-list-item-box,
+.grouped-window-list-item-box.top, .grouped-window-list-item-box.bottom,
+.grouped-window-list-item-box.left, .grouped-window-list-item-box.right {
+  color: $m-fg;
+  background-color: $m-clear;
+  border-radius: $m-r-md;
+  border: 0 solid $m-clear;
+  padding: 0;
+  margin: 0 3px;
+  font-weight: normal;
+  transition-duration: 120ms;
+}
+// svislý dock: dlaždice má celou šířku ostrova, indikátor je SVG linka u jeho vnitřní hrany (gen-assets.py, 3x42);
+// contain drží linku svisle ve středu i při jiné velikosti ikon zóny (panel-zone-icon-sizes).
+// Podklad stavu (hover/focus/pozornost) nese až ikona #appMenuIcon, takže je kolem ní rovnoměrný a ikona v jeho středu.
+// border-left-width: 0 je nutné: appGroup.js (allocate) posouvá ikonu o 2x style_length('border-left-width')
+// a upstream Mint-Y tam má 2px (border: none tuhle longhand hodnotu pro style_length nepřebije).
+.grouped-window-list-item-box.left, .grouped-window-list-item-box.right {
+  border: none; border-left-width: 0; border-right-width: 0; padding: 0; margin: 0;
+  background-position: 0px 0px; background-size: contain;
+  &, &:hover, &:focus, &:focus:hover, &.grouped-window-list-item-demands-attention { background-color: $m-clear; }
+  // padding až na StIcon: kontejneru ikony dává appGroup.js:271 inline 'padding: 0px', který CSS nepřebije
+  #appMenuIcon { border-radius: $m-r-md; transition-duration: 120ms; }
+  #appMenuIcon StIcon { padding: 3px; }
+  &:hover #appMenuIcon { background-color: $m-hover; }
+  &:focus #appMenuIcon { background-color: $m-soft; }
+  &:focus:hover #appMenuIcon { background-color: $m-sel; }
+  &.grouped-window-list-item-demands-attention #appMenuIcon { background-color: rgba($m-err, 0.22); }
+}
+.grouped-window-list-item-box.top, .grouped-window-list-item-box.bottom { border-bottom: 2px solid $m-clear; padding: 0 8px; }
+.grouped-window-list-item-box:hover { background-color: $m-hover; color: $m-fg; }
+// :active = skupina má otevřená okna (běží) -> krátká tlumená linka; :focus = aktivní okno -> delší akcentní linka + jemné pozadí
+.grouped-window-list-item-box:active, .grouped-window-list-item-box:checked { color: $m-fg; border-color: $m-disabled; }
+.grouped-window-list-item-box:focus { color: $m-fg; background-color: $m-soft; border-color: $m-acc; }
+.grouped-window-list-item-box:focus:hover { background-color: $m-sel; border-color: $m-acc; }
+.grouped-window-list-item-box.left:active, .grouped-window-list-item-box.right:active,
+.grouped-window-list-item-box.left:checked, .grouped-window-list-item-box.right:checked { background-image: url("#{$asset_path}/misc/dock-running.svg"); }
+.grouped-window-list-item-box.left:focus, .grouped-window-list-item-box.right:focus { background-image: url("#{$asset_path}/misc/dock-focused.svg"); }
+// gradient jen na výplni průběhu (pravidlo z tokens.json)
+.grouped-window-list-item-box .progress, .window-list-item-box .progress {
+  background-color: $m-acc;
+  background-gradient-direction: horizontal;
+  background-gradient-start: rgba(mt('grad_from'), 0.55);
+  background-gradient-end: rgba(mt('grad_to'), 0.55);
+  border-radius: $m-r-md;
+}
+// specificita (0,2,0) a po skupině .left/.right, jinak by ji přebil jejich průhledný background a border
+.grouped-window-list-item-box.grouped-window-list-item-demands-attention,
+.window-list-item-box.window-list-item-demands-attention {
+  background-gradient-direction: none;
+  background-color: rgba($m-err, 0.22);
+  border-color: $m-err;
+}
+.grouped-window-list-button-label { padding-left: 4px; color: $m-fg; }
+.grouped-window-list-thumbnail-label { padding-left: 4px; }
+// odznak počtu oken
+// applet dělá z odznaku čtverec max(šířka, výška) popisku a popisek v něm centruje sám (appGroup.js):
+// padding a rámeček na boxu by číslo posunuly mimo střed -> odsazení patří popisku, obrys je box-shadow
+.grouped-window-list-badge { border-radius: $m-pill; background-color: $m-raised; box-shadow: 0 0 0 1px $m-border; margin: 0; padding: 0; }
+.grouped-window-list-number-label { font-size: 10px; font-weight: bold; color: $m-fg; padding: 1px 4px; }
+// odznak notifikací (mockup: akcentní kapsle)
+.grouped-window-list-notifications-badge { border-radius: $m-pill; background-color: $m-focus; padding: 0; }
+.grouped-window-list-notifications-badge-label { font-size: 10px; font-weight: bold; color: $m-acc-fg; padding: 1px 4px; }
+// náhledy oken
+.grouped-window-list-thumbnail-menu, .window-list-preview {
+  color: $m-fg;
+  background-color: $m-raised;
+  border: 1px solid $m-hair;
+  border-radius: $m-r-lg;
+  box-shadow: mt('shadow_popup');
+  padding: 4px;
+  spacing: 6px;
+}
+.grouped-window-list-thumbnail-menu > StBoxLayout { padding: 2px; }
+.grouped-window-list-thumbnail-menu .item-box { padding: 8px; border: 1px solid $m-clear; border-radius: $m-r-md; spacing: 4px; }
+.grouped-window-list-thumbnail-menu .item-box:outlined { padding: 8px; border: 1px solid $m-acc; background-color: $m-hover; }
+.grouped-window-list-thumbnail-menu .item-box:selected { padding: 8px; border: 1px solid $m-acc; background-color: $m-sel; }
+.grouped-window-list-thumbnail-menu .separator { width: 1px; background: $m-hair; }
+.grouped-window-list-thumbnail-alert { background: rgba($m-err, 0.25); }
+
+// starý seznam oken
+.window-list-item-box { color: $m-muted; border-radius: $m-r-sm; font-weight: normal; }
+.window-list-item-box:hover, .window-list-item-box:groupFocus { color: $m-fg; background-color: $m-hover; }
+.window-list-item-box:active, .window-list-item-box:checked, .window-list-item-box:focus, .window-list-item-box:running {
+  color: $m-fg; border-color: $m-acc; background-color: $m-soft;
+}
+
+// ---------------------------------------------------------------------------
+// 4. Popup menu (.menu = karta s radiusem 16, stínem a hairline)
+// ---------------------------------------------------------------------------
+.menu {
+  color: $m-fg;
+  background-color: $m-raised;
+  border: 1px solid $m-hair;
+  box-shadow: mt('shadow_popup');
+}
+.menu-top, .menu-bottom, .menu-left, .menu-right { border-radius: $m-r-lg; }
+.menu-top { margin-top: 2px; }
+.menu-bottom { margin-bottom: 2px; }
+.menu-left { margin-left: 2px; }
+.menu-right { margin-right: 2px; }
+.popup-menu-content { padding: 6px; }
+.popup-menu-item {
+  padding: 7px 12px;
+  spacing: 10px;
+  border-radius: $m-r-sm;
+  border-left-width: 0;
+  border-right-width: 0;
+  color: $m-fg;
+}
+.popup-menu-item:active, .popup-menu-item:focus { color: $m-fg; background-color: $m-sel; }
+.popup-menu-item:insensitive { color: $m-disabled; background: none; }
+.popup-inactive-menu-item { color: $m-fg; }
+.popup-inactive-menu-item:insensitive { color: $m-disabled; }
+.popup-sub-menu { background-color: $m-alt; border-radius: $m-r-md; box-shadow: none; margin: 2px 0 4px 0; padding: 2px 0; }
+.popup-sub-menu .popup-menu-item:ltr { padding-left: 2.2em; }
+.popup-sub-menu .popup-menu-item:rtl { padding-right: 2.2em; }
+.popup-combo-menu {
+  color: $m-fg;
+  background-color: $m-raised;
+  border: 1px solid $m-hair;
+  border-radius: $m-r-md;
+  box-shadow: mt('shadow_popup');
+  padding: 6px;
+}
+.popup-combobox-item { padding: 7px 12px; border: 1px solid $m-clear; border-radius: $m-r-sm; }
+.popup-separator-menu-item {
+  -gradient-height: 1px;
+  -gradient-start: $m-hair;
+  -gradient-end: $m-hair;
+  -margin-horizontal: 8px;
+  height: 1px;
+  margin: 4px 0;
+}
+.popup-device-menu-item { color: $m-fg; font-weight: 600; }
+.popup-device-menu-item:insensitive { color: $m-muted; }
+.popup-device-menu-item .popup-inactive-menu-item { color: $m-fg; font-weight: normal; }
+.popup-subtitle-menu-item { color: $m-muted; }
+
+// slidery a hlasitost: plná akcentní výplň (cairo neumí gradient)
+.popup-slider-menu-item, .slider {
+  // táhlo kreslí slider.js plným kruhem barvou popředí, obrys ani stín neumí -> bílé táhlo na bílém
+  // popupu splývalo; akcentní táhlo je vidět na dráze i na ploše v obou variantách
+  color: $m-acc;
+  -slider-height: 6px;
+  -slider-background-color: $m-border;
+  -slider-border-color: $m-clear;
+  -slider-active-background-color: $m-acc;
+  -slider-active-border-color: $m-clear;
+  -slider-border-width: 0;
+  -slider-handle-radius: 8px;
+  height: 20px;
+  min-width: 15em;
+  border: 0 solid transparent;
+}
+.sound-player .slider { color: $m-acc; -slider-height: 4px; height: 0.5em; padding: 0; border: none; -slider-handle-radius: 6px; }
+.sound-volume-menu-item { padding: 7px 12px; }
+.sound-volume-menu-item StIcon { icon-size: 1.14em; padding-left: 8px; padding-right: 8px; color: $m-muted; }
+.sound-player-generic-coverart { background: $m-alt; border-radius: $m-r-md; }
+.sound-player-overlay { background: rgba($m-raised, 0.94); border-top: 1px solid $m-hair; color: $m-fg; border-radius: $m-r-md; }
+.sound-player-overlay StButton { color: $m-fg; border-radius: $m-pill; border: 1px solid $m-clear; }
+.sound-player-overlay StButton:hover, .sound-player > StBoxLayout:first-child StButton:small:hover {
+  color: $m-fg; background-color: $m-hover; border: 1px solid $m-clear; box-shadow: none;
+}
+.sound-player-overlay StButton:active, .sound-player > StBoxLayout:first-child StButton:small:active {
+  color: $m-acc-fg; background-color: $m-acc; border: 1px solid $m-acc; box-shadow: none;
+}
+
+// ---------------------------------------------------------------------------
+// 5. Tlačítka, vstupy, posuvníky, přepínače
+// ---------------------------------------------------------------------------
+.sound-button, .notification-button, .notification-icon-button,
+.popup-menu #notification .notification-button, .popup-menu #notification .notification-icon-button {
+  min-height: 20px;
+  padding: 5px 16px;
+  border-radius: $m-r-sm;
+  color: $m-fg;
+  background-color: $m-clear;
+  border: 1px solid $m-border;
+  box-shadow: none;
+  font-weight: 600;
+  transition-duration: 100ms;
+}
+.sound-button:focus, .notification-button:focus, .notification-icon-button:focus,
+.popup-menu #notification .notification-button:focus, .popup-menu #notification .notification-icon-button:focus {
+  color: $m-fg; background-color: $m-clear; border: 1px solid $m-focus; box-shadow: none;
+}
+.sound-button:hover, .notification-button:hover, .notification-icon-button:hover,
+.popup-menu #notification .notification-button:hover, .popup-menu #notification .notification-icon-button:hover,
+.sound-button:hover:focus, .notification-button:hover:focus, .notification-icon-button:hover:focus {
+  color: $m-fg; background-color: $m-hover; border: 1px solid $m-border; box-shadow: none;
+}
+.sound-button:active, .notification-button:active, .notification-icon-button:active,
+.popup-menu #notification .notification-button:active, .popup-menu #notification .notification-icon-button:active {
+  color: $m-fg; background-color: $m-active; border: 1px solid $m-border; box-shadow: none;
+}
+.sound-button:insensitive, .notification-button:insensitive, .notification-icon-button:insensitive,
+.popup-menu #notification .notification-button:insensitive, .popup-menu #notification .notification-icon-button:insensitive {
+  color: $m-disabled; border: 1px solid $m-hair; background-color: $m-clear; box-shadow: none;
+}
+.sound-button { width: 22px; height: 13px; padding: 8px; border-radius: $m-pill; border-color: $m-clear; }
+.sound-button:hover { background-color: $m-hover; }
+.sound-button StIcon { icon-size: 1.4em; }
+
+// pole (hledání, příkazová řádka, heslo): pilulka, 2px akcentní rámeček při fokusu (neměnná šířka rámečku)
+.prompt-dialog-password-entry, .run-dialog-entry, #appmenu-search-entry, #menu-search-entry,
+.popup-menu #notification StEntry, .notification StEntry {
+  padding: 6px 12px;
+  caret-size: 1px;
+  caret-color: $m-fg;
+  selection-background-color: $m-acc;
+  selected-color: $m-acc-fg;
+  transition-duration: 150ms;
+  border-radius: $m-pill;
+  color: $m-fg;
+  background-color: $m-alt;
+  border: 2px solid $m-clear;
+  box-shadow: none;
+}
+.prompt-dialog-password-entry:focus, .run-dialog-entry:focus, #appmenu-search-entry:focus, #menu-search-entry:focus,
+.popup-menu #notification StEntry:focus, .notification StEntry:focus {
+  color: $m-fg; background-color: $m-alt; border: 2px solid $m-focus; box-shadow: none;
+}
+.prompt-dialog-password-entry:hover, .run-dialog-entry:hover, #appmenu-search-entry:hover, #menu-search-entry:hover,
+.popup-menu #notification StEntry:hover {
+  color: $m-fg; background-color: $m-alt; border: 2px solid $m-border; box-shadow: none;
+}
+.prompt-dialog-password-entry:insensitive, .run-dialog-entry:insensitive, #appmenu-search-entry:insensitive,
+#menu-search-entry:insensitive, .popup-menu #notification StEntry:insensitive, .notification StEntry:insensitive {
+  color: $m-disabled; background-color: $m-alt; border: 2px solid $m-clear; box-shadow: none;
+}
+.prompt-dialog-password-entry StLabel.hint-text, .run-dialog-entry StLabel.hint-text, #appmenu-search-entry StLabel.hint-text,
+#menu-search-entry StLabel.hint-text, .popup-menu #notification StEntry StLabel.hint-text { color: $m-muted; }
+.prompt-dialog-password-entry StIcon.peek-password, .run-dialog-entry StIcon.peek-password { color: $m-muted; }
+#menu-search-entry { width: 250px; min-height: 16px; font-weight: normal; }
+.menu-search-entry-icon, .appmenu-search-entry-icon { icon-size: 1em; color: $m-muted; }
+
+StScrollBar { padding: 8px; }
+StScrollView StScrollBar { min-width: 6px; min-height: 6px; }
+StScrollBar StBin#trough { background-color: $m-clear; border-radius: $m-pill; }
+StScrollBar StButton#vhandle, StScrollBar StButton#hhandle { border-radius: $m-pill; background-color: $m-disabled; border: 0px solid; margin: 0px; }
+StScrollBar StButton#vhandle:hover, StScrollBar StButton#hhandle:hover { background-color: $m-muted; }
+StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active { background-color: $m-acc; }
+
+.cinnamon-link { color: $m-acc-text; text-decoration: underline; }
+.cinnamon-link:hover { color: $m-acc-hover; }
+.ripple-pointer-location { background-color: $m-soft; box-shadow: 0 0 2px 2px $m-acc; }
+
+// checkbox / radio / switch: SVG recolored z tokenů (gen-assets.py)
+.check-box StBin { border-radius: $m-r-xs; }
+.toggle-switch { width: 44px; height: 24px; background-size: contain; }
+
+// tooltip
+#Tooltip {
+  border: 1px solid $m-hair;
+  border-radius: $m-r-xs;
+  padding: 5px 10px;
+  background-color: mt('tooltip_bg');
+  color: mt('tooltip_fg');
+  font-size: 0.92em;
+  font-weight: normal;
+  text-align: center;
+  margin: 3px;
+}
+#LookingGlassDialog { color: $m-fg; border: 1px solid $m-hair; border-radius: $m-r-md; background-color: $m-raised; }
+
+// ---------------------------------------------------------------------------
+// 6. Hlavní menu (applet menu@cinnamon.org) – karta radius 22, pilulkové kategorie
+// ---------------------------------------------------------------------------
+.menu.appmenu-background, .appmenu-background { border-radius: $m-r-xl; }
+.appmenu-background .popup-menu-content { padding: 0; }
+.appmenu-main-box { spacing: 6px; }
+.appmenu-right-box { spacing: 6px; padding: 14px; }
+.appmenu-categories-applications-box { spacing: 12px; }
+.appmenu-search-box { spacing: 10px; }
+.appmenu-applications-box { padding-right: 4px; }
+.appmenu-category-button-greyed, .appmenu-category-button-selected, .appmenu-category-button,
+.appmenu-application-button-selected, .appmenu-application-button, .appmenu-sidebar-button {
+  padding: 7px 12px;
+  spacing: 10px;
+  border-radius: $m-r-sm;
+  color: $m-fg;
+}
+.appmenu-category-button, .appmenu-category-button-selected, .appmenu-category-button-greyed { border-radius: $m-pill; color: $m-muted; }
+.appmenu-category-button:hover { background-color: $m-hover; color: $m-fg; }
+.appmenu-category-button-selected { background-color: $m-sel; color: $m-fg; }
+.appmenu-category-button-greyed { color: $m-disabled; font-style: normal; }
+.appmenu-category-button-label, .appmenu-application-button-label { padding: 0; }
+.appmenu-application-button { padding: 6px 10px; }
+.appmenu-application-button-selected { background-color: $m-sel; padding: 6px 10px; }
+.appmenu-application-button:highlighted, .appmenu-application-button-selected:highlighted { font-weight: 600; }
+.appmenu-application-button-label { font-weight: 600; color: $m-fg; }
+.appmenu-application-button-description { color: $m-muted; font-size: 0.9em; }
+.appmenu-sidebar {
+  padding: 14px 0;
+  spacing: 4px;
+  background-color: $m-alt;
+  border-right: 1px solid $m-hair;
+  border-radius: $m-r-xl 0 0 $m-r-xl;
+}
+// karta je kulatá ve všech rozích (.menu.appmenu-background) -> sidebar radius karty minus 1px rámeček
+.menu-top .appmenu-sidebar, .menu-bottom .appmenu-sidebar,
+.menu-left .appmenu-sidebar, .menu-right .appmenu-sidebar { border-radius: ($m-r-xl - 1px) 0 0 ($m-r-xl - 1px); }
+.appmenu-sidebar-button { padding: 5px 8px; margin: 0 8px; }
+.appmenu-sidebar-button:hover { background-color: $m-hover; border-color: $m-clear; }
+.appmenu-system-box { spacing: 8px; }
+.appmenu-system-button, .appmenu-sidebar .appmenu-system-button {
+  padding: 8px;
+  border: 1px solid $m-clear;
+  border-radius: $m-pill;
+  background-color: $m-clear;
+  color: $m-muted;
+}
+.appmenu-system-button:hover, .appmenu-sidebar .appmenu-system-button:hover,
+.appmenu-system-button-lock:hover, .appmenu-system-button-logout:hover,
+.appmenu-sidebar .appmenu-system-button-lock:hover, .appmenu-sidebar .appmenu-system-button-logout:hover {
+  background-color: $m-hover; color: $m-fg;
+}
+.appmenu-system-button-shutdown, .appmenu-sidebar .appmenu-system-button-shutdown { color: $m-err; background-color: $m-clear; }
+.appmenu-system-button-shutdown:hover, .appmenu-sidebar .appmenu-system-button-shutdown:hover { color: $m-err; background-color: rgba($m-err, 0.14); }
+.user-icon, .user-icon.user-avatar { border-radius: $m-pill; }
+.user-icon StIcon.highlighted { border-color: $m-acc; }
+.user-label { color: $m-fg; font-weight: 600; }
+
+// starší rozložení menu (cinnamenu/mint-menu třídy v Cinnamon 6.x už nepoužívá, ale ať je konzistentní)
+.menu-favorites-box { background-color: $m-alt; border: 1px solid $m-hair; border-radius: $m-r-md; }
+.menu-favorites-button:hover, .menu-category-button:hover, .menu-category-button-selected, .menu-application-button-selected {
+  background-color: $m-sel; border: 1px solid $m-clear; color: $m-fg; border-radius: $m-r-sm;
+}
+.menu-category-button-greyed { color: $m-disabled; }
+
+// ---------------------------------------------------------------------------
+// 7. Kalendář + události (dnes = dokonalý kruh z SVG, neroztahuje se s buňkou)
+// ---------------------------------------------------------------------------
+.calendar-main-box { margin: 0 0.8em 0.5em 0.8em; }
+.calendar-events-main-box { background-color: $m-alt; border: 1px solid $m-hair; border-radius: $m-r-md; }
+.calendar-events-no-events-button:hover { background-color: $m-sel; border-radius: $m-r-sm; }
+.calendar-events-no-events-button:hover .calendar-events-no-events-icon,
+.calendar-events-no-events-button:hover .calendar-events-no-events-label { color: $m-fg; }
+.calendar-events-no-events-icon, .calendar-events-no-events-label { color: $m-muted; font-weight: normal; }
+.calendar-events-date-label { color: $m-fg; font-weight: 600; }
+.calendar-event-button { border: 1px solid $m-clear; border-radius: $m-r-sm; }
+.calendar-event-button .calendar-event-time-past { color: $m-disabled; font-weight: normal; }
+.calendar-event-button .calendar-event-time-present, .calendar-event-button .calendar-event-time-future { color: $m-fg; font-weight: 600; }
+.calendar-event-button .calendar-event-time-present:all-day { color: $m-acc-text; }
+.calendar-event-button .calendar-event-summary, .calendar-event-button .calendar-event-countdown { color: $m-fg; }
+.calendar-event-button .calendar-event-countdown:imminent { color: $m-warn; }
+.calendar-event-button .calendar-event-countdown:current { color: $m-acc-text; }
+.calendar-event-button:hover { background-color: $m-sel; border: 1px solid $m-clear; }
+.calendar-event-button:hover .calendar-event-time-past, .calendar-event-button:hover .calendar-event-time-present,
+.calendar-event-button:hover .calendar-event-time-future, .calendar-event-button:hover .calendar-event-summary,
+.calendar-event-button:hover .calendar-event-countdown { color: $m-fg; }
+.calendar-event-color-strip { width: 3px; border-radius: 2px; }
+.calendar-today-day-label, .calendar-today-date-label, .calendar-month-label { color: $m-fg; }
+.calendar-today-day-label { font-weight: 600; }
+.calendar-today-home-button-enabled { border-radius: $m-r-sm; }
+.calendar-today-home-button-enabled:hover { background-color: $m-sel; }
+.calendar-today-home-button-enabled:hover .calendar-today-day-label,
+.calendar-today-home-button-enabled:hover .calendar-today-date-label { color: $m-fg; }
+.calendar-day-heading { color: $m-muted; font-size: 0.92em; margin-top: 0.6em; }
+.calendar-day { color: $m-fg; }
+.calendar-nonwork-day { background-color: $m-clear; font-weight: normal; }
+.calendar-day-heading.calendar-nonwork-day { color: $m-muted; }
+.calendar-day-base { width: 2.2em; height: 2.2em; padding: 0.1em; }
+.calendar-day-base:hover { font-weight: normal; color: $m-fg; background-color: $m-hover; border-radius: $m-pill; }
+.calendar-not-today { color: $m-fg; border-radius: $m-pill; }
+// víkendy tlumeně (po .calendar-not-today, stejná specificita)
+.calendar-not-today.calendar-nonwork-day { color: $m-muted; }
+.calendar-not-today:selected { font-weight: 600; background-color: $m-sel; color: $m-fg; }
+.calendar-not-today:selected:hover { font-weight: 600; color: $m-fg; }
+.calendar-today, .calendar-today:hover {
+  color: $m-acc-fg;
+  font-weight: bold;
+  background-color: $m-acc;
+  border-width: 0;
+  border-radius: $m-pill;
+}
+.calendar-today:selected { font-weight: bold; }
+.calendar-other-month-day { color: $m-disabled; }
+.calendar-other-month-day:hover { color: $m-fg; }
+.calendar-week-number { color: $m-muted; font-size: 0.8em; }
+.calendar-day-event-dot { border-radius: 2px; width: 4px; height: 4px; }
+
+// ---------------------------------------------------------------------------
+// 8. Notifikace (karta s akcentním pruhem vlevo; urgency třída v Cinnamonu neexistuje)
+// ---------------------------------------------------------------------------
+#notification {
+  color: $m-fg;
+  background-color: $m-raised;
+  border: 1px solid $m-hair;
+  border-left-width: 3px;
+  border-left-color: $m-acc;
+  border-radius: $m-r-lg;
+  box-shadow: mt('shadow_popup');
+  padding: 14px 16px;
+  spacing-rows: 8px;
+  spacing-columns: 12px;
+  margin-from-right-edge-of-screen: 20px;
+  width: 28em;
+}
+// seznam v appletu notifikací o kus širší než bublina (víc textu na řádek); obrázek v seznamu zmenšuje
+// lokální přepis appletu ~/.local/share/cinnamon/applets/notifications@cinnamon.org (64 px místo 125)
+.popup-menu #notification { color: $m-fg; border-image: url("#{$asset_path}/misc/message.svg") 9 9 9 9; width: 32em; }
+#notification.multi-line-notification { padding-bottom: 14px; color: $m-fg; }
+// min-height 159 ze základu počítal s obrázkem 125 px; obrázek má 88 px (bublina) / 64 px (seznam) a výšku
+// řádku drží přepis appletu (obrázek bez row_span), jinak by se řádek natáhl a obrázek vycentroval
+.notification-with-image { color: $m-fg; min-height: 0; }
+#notification-body { spacing: 4px; }
+#notification-actions { spacing: 8px; }
+// první akce = výchozí (mockup: plné akcentní tlačítko, bez gradientu)
+#notification-actions .notification-button:first-child {
+  color: $m-acc-fg; background-color: $m-acc; border: 1px solid $m-acc; box-shadow: none;
+}
+#notification-actions .notification-button:first-child:hover { background-color: $m-acc-hover; border: 1px solid $m-acc-hover; color: $m-acc-fg; }
+#notification-actions .notification-button:first-child:active { background-color: $m-acc-pressed; border: 1px solid $m-acc-pressed; color: $m-acc-fg; }
+.notification-button, .notification-icon-button { padding: 4px 14px; }
+.notification-icon-button > StIcon { icon-size: 32px; }
+
+// ---------------------------------------------------------------------------
+// 9. OSD (kapsle), Alt+Tab, expo, workspace OSD
+// ---------------------------------------------------------------------------
+.workspace-switch-osd, .info-osd, .media-keys-osd {
+  color: $m-fg;
+  background-color: $m-raised;
+  border: 1px solid $m-hair;
+  border-radius: $m-pill;
+  box-shadow: mt('shadow_popup');
+  text-align: center;
+  padding: 12px 24px;
+}
+.media-keys-osd { margin-bottom: 1em; font-weight: 600; spacing: 12px; }
+.media-keys-osd StIcon { icon-size: 28px; color: $m-fg; }
+.media-keys-osd .level {
+  min-width: 160px;
+  -barlevel-height: 6px;
+  -barlevel-background-color: $m-border;
+  -barlevel-active-background-color: $m-acc;
+  -barlevel-amplify-color: $m-warn;
+  -barlevel-amplify-separator-width: 3px;
+}
+.media-keys-osd .level-bar { border-radius: $m-pill; background-color: $m-acc; }
+.info-osd { border-radius: $m-r-xl; font-size: 1.1em; font-weight: 600; }
+.workspace-switch-osd { min-width: 140px; margin-bottom: 1em; border-radius: $m-r-xl; font-weight: 600; padding: 12px 36px 0 36px; }
+.workspace-switch-osd-indicator { background-color: $m-disabled; padding: 3px; margin: 15px; border-radius: $m-pill; }
+.workspace-switch-osd-indicator:active { background-color: $m-acc; padding: 6px; margin: 12px; }
+.resize-popup, .monitor-label { color: $m-fg; background-color: $m-raised; border: 1px solid $m-hair; border-radius: $m-r-md; padding: 12px; }
+
+.switcher-list {
+  color: $m-fg;
+  background-color: rgba($m-raised, 0.94);
+  border: 1px solid $m-hair;
+  border-radius: $m-r-xl;
+  box-shadow: mt('shadow_popup');
+  padding: 14px;
+}
+.switcher-list .item-box { padding: 8px; border-radius: $m-r-md; border: 2px solid $m-clear; }
+.switcher-list .item-box:outlined { padding: 8px; border: 2px solid $m-border; }
+.switcher-list .item-box:selected { background-color: $m-soft; border: 2px solid $m-acc; }
+.switcher-list .separator { width: 1px; background: $m-hair; }
+.switcher-arrow { border-color: $m-clear; color: $m-muted; }
+.switcher-arrow:highlighted { border-color: $m-clear; color: $m-fg; }
+
+.expo-background { background-color: $m-bg; }
+.workspace-overview-background-shade { background-color: rgba(0, 0, 0, 0.5); }
+.expo-workspace-thumbnail-frame { border: 4px solid $m-clear; background-color: $m-clear; border-radius: $m-r-md; }
+.expo-workspace-thumbnail-frame#active { border: 4px solid $m-acc; background-color: black; border-radius: $m-r-md; }
+.expo-workspaces-name-entry, .expo-workspaces-name-entry#selected {
+  height: 1.5em; font-size: 1em; padding: 5px 12px; border-radius: $m-pill;
+  color: $m-fg; background-color: $m-alt; border: 2px solid $m-clear; box-shadow: none;
+}
+.expo-workspaces-name-entry:focus, .expo-workspaces-name-entry#selected:focus {
+  border: 2px solid $m-focus; background-color: $m-alt; color: $m-fg; font-style: normal;
+  selection-background-color: $m-acc; selected-color: $m-acc-fg;
+}
+.window-caption { background-color: $m-raised; border: 1px solid $m-hair; color: $m-fg; border-radius: $m-pill; padding: 4px 12px; }
+.window-caption:focus { background-color: $m-acc; color: $m-acc-fg; border: 1px solid $m-acc; }
+.window-border { border: 3px $m-acc; border-radius: $m-r-md; background-color: $m-soft; box-shadow: 0 0 0 1px $m-acc inset; }
+.overview-empty-placeholder { color: $m-muted; }
+.tile-preview, .tile-hud { background-color: $m-soft; border: 1px solid $m-acc; border-radius: $m-r-sm; }
+.tile-preview.snap, .tile-hud.snap { background-color: $m-sel; }
+.tile-hud:top, .tile-hud:bottom, .tile-hud:left, .tile-hud:right,
+.tile-hud:top-left, .tile-hud:top-right, .tile-hud:bottom-left, .tile-hud:bottom-right { border-radius: 0; }
+
+// ---------------------------------------------------------------------------
+// 10. Dialogy (modální, polkit, end-session, run)
+// ---------------------------------------------------------------------------
+.dialog {
+  color: $m-fg;
+  background-color: $m-raised;
+  border: 1px solid $m-hair;
+  border-radius: $m-r-xl;
+  box-shadow: mt('shadow_window');
+  padding: 22px;
+}
+.dialog .dialog-button, .dialog .dialog-button:destructive-action, .dialog .dialog-button:default {
+  font-weight: 600; padding: 8px 16px; border-radius: $m-r-sm; box-shadow: none;
+  border: 1px solid $m-border; color: $m-fg; background-color: $m-clear;
+}
+.dialog .dialog-button:hover { border: 1px solid $m-border; color: $m-fg; background-color: $m-hover; }
+.dialog .dialog-button:focus { border: 1px solid $m-focus; color: $m-fg; background-color: $m-clear; }
+.dialog .dialog-button:active, .dialog .dialog-button:checked { border: 1px solid $m-border; color: $m-fg; background-color: $m-active; }
+.dialog .dialog-button:insensitive { border: 1px solid $m-hair; color: $m-disabled; background-color: $m-clear; }
+.dialog .dialog-button:default { border: 1px solid $m-acc; color: $m-acc-fg; background-color: $m-acc; }
+.dialog .dialog-button:hover:default { border: 1px solid $m-acc-hover; color: $m-acc-fg; background-color: $m-acc-hover; }
+.dialog .dialog-button:focus:default { border: 1px solid $m-focus; color: $m-acc-fg; background-color: $m-acc; }
+.dialog .dialog-button:active:default, .dialog .dialog-button:checked:default { border: 1px solid $m-acc-pressed; color: $m-acc-fg; background-color: $m-acc-pressed; }
+.dialog .dialog-button:insensitive:default { border: 1px solid $m-hair; color: $m-disabled; background-color: $m-alt; }
+.dialog .dialog-button:destructive-action { border: 1px solid $m-err; color: $m-err-fg; background-color: $m-err; }
+.dialog .dialog-button:hover:destructive-action { border: 1px solid $m-err; color: $m-err-fg; background-color: rgba($m-err, 0.88); }
+.dialog .dialog-button:focus:destructive-action { border: 1px solid $m-focus; color: $m-err-fg; background-color: $m-err; }
+.dialog .dialog-button:active:destructive-action, .dialog .dialog-button:checked:destructive-action { border: 1px solid $m-err; color: $m-err-fg; background-color: rgba($m-err, 0.78); }
+.dialog .dialog-button:insensitive:destructive-action { border: 1px solid $m-hair; color: $m-disabled; background-color: $m-alt; }
+.dialog-list .dialog-list-box .dialog-list-item .dialog-list-item-description { color: $m-muted; }
+.end-session-dialog .dialog-list .dialog-list-title { color: mt('warning_text'); background-color: rgba($m-warn, 0.12); border-radius: $m-r-md; }
+.run-dialog-description { color: $m-muted; }
+.run-dialog-description.error, .prompt-dialog-error-label { color: $m-err; }
+.audio-device-selection-dialog .audio-selection-box .audio-selection-device, .polkit-dialog-user-combo {
+  border: 1px solid $m-border; color: $m-fg; background-color: $m-alt; border-radius: $m-r-md;
+}
+.audio-device-selection-dialog .audio-selection-box .audio-selection-device:hover, .polkit-dialog-user-combo:hover {
+  border: 1px solid $m-border; color: $m-fg; background-color: $m-hover;
+}
+.audio-device-selection-dialog .audio-selection-box .audio-selection-device:focus, .polkit-dialog-user-combo:focus {
+  border: 1px solid $m-focus; color: $m-fg; background-color: $m-alt;
+}
+.audio-device-selection-dialog .audio-selection-box .audio-selection-device:selected, .polkit-dialog-user-combo:selected,
+.audio-device-selection-dialog .audio-selection-box .audio-selection-device:active, .polkit-dialog-user-combo:active,
+.audio-device-selection-dialog .audio-selection-box .audio-selection-device:checked, .polkit-dialog-user-combo:checked {
+  border: 1px solid $m-acc; color: $m-fg; background-color: $m-soft;
+}
+.audio-device-selection-dialog .audio-selection-box .audio-selection-device:insensitive, .polkit-dialog-user-combo:insensitive {
+  border: 1px solid $m-hair; color: $m-disabled; background-color: $m-alt;
+}
+
+// ---------------------------------------------------------------------------
+// 11. Plocha: desklety + virtuální klávesnice (doladění barev)
+// ---------------------------------------------------------------------------
+.desklet, .desklet-with-borders, .desklet-with-borders-and-header, .desklet-header, .photoframe-box { color: $m-fg; }
+.desklet-with-borders, .desklet-with-borders-and-header, .photoframe-box {
+  background-color: $m-raised; border: 1px solid $m-hair; border-radius: $m-r-lg;
+}
+.desklet-with-borders-and-header { border-top-width: 0; border-radius: 0; border-radius-bottomleft: 16px; border-radius-bottomright: 16px; }
+.desklet-header { background-color: $m-alt; border: 1px solid $m-hair; border-radius: 16px 16px 0 0; }
+.desklet-drag-placeholder { border: 2px solid $m-acc; background-color: $m-soft; }
+.desklet:highlight, .desklet-with-borders:highlight, .desklet-with-borders-and-header:highlight { background-color: $m-soft; }
+#virtual-keyboard { background-color: rgba($m-raised, 0.96); box-shadow: inset 0 1px 0 0 $m-hair; }
+.vkeyboard-key, .vkeyboard-key.shift-key-lowercase, .vkeyboard-key.escape-key, .vkeyboard-key.hide-key,
+.vkeyboard-key.non-alpha-key, .vkeyboard-key.modifier-key { background-color: $m-alt; border-radius: $m-r-sm; box-shadow: none; }
+.vkeyboard-key:hover, .vkeyboard-key:checked, .vkeyboard-key.modifier-key:hover { background-color: $m-hover; color: $m-fg; box-shadow: none; }
+.vkeyboard-key:active { background-color: $m-acc; border: 1px solid $m-acc; color: $m-acc-fg; box-shadow: none; }
+.vkeyboard-key.enter-key { border-color: $m-acc; border-width: 2px; }
+.vkeyboard-key.shift-key-uppercase, .vkeyboard-key.modifier-key:latched { background-color: $m-sel; }
+.vkeyboard-subkeys { color: $m-fg; -arrow-border-radius: 16px; -arrow-background-color: $m-raised; -arrow-border-color: $m-hair; }
+.candidate-popup-boxpointer { -arrow-border-radius: 16px; -arrow-background-color: $m-raised; -arrow-border-color: $m-hair; }
+.candidate-index { color: $m-muted; }
+.candidate-box { color: $m-fg; border-radius: $m-r-sm; }
+.candidate-box:selected, .candidate-box:hover { background-color: $m-sel; }
+#keyboard { background-color: $m-raised; border-color: $m-hair; }
+.keyboard-key { color: $m-fg; background-color: $m-alt; border: 1px solid $m-border; border-radius: $m-r-sm; }
+.keyboard-key:hover { background-color: $m-hover; }
+.keyboard-key:active, .keyboard-key:checked { background-color: $m-acc; border: 1px solid $m-acc; color: $m-acc-fg; }
+.keyboard-key:grayed { color: $m-disabled; background-color: $m-clear; }
+.keyboard-subkeys { color: $m-fg; -arrow-background-color: $m-raised; -arrow-border-color: $m-hair; }

@@ -1,0 +1,13 @@
+// Mentha: rozměry a radiusy. Importuje se na konec Orchisova _variables.scss.
+// Požaduje $variant a _mentha-tokens.scss.
+@import 'mentha-tokens';
+
+$medium-size:     34px;                    // výška tlačítek a entry (spec: 34 px)
+$large-size:      46px;                    // headerbar CSD (spec: 46 px)
+$corner-radius:   mt-radius(sm);           // tlačítka, entry: 10
+$window-radius:   mt-radius(md);           // okna: 12
+$popup-radius:    mt-radius(lg);           // 16
+$menu-radius:     mt-radius(lg);           // popover a menu: 16
+$menuitem-radius: mt-radius(sm);           // položky menu: 10
+$font-family:       #{$mt-font-ui}, sans-serif;
+$large-font-family: #{$mt-font-display}, #{$mt-font-ui}, sans-serif;

@@ -1,0 +1,50 @@
+// Mentha: nahrazuje upstream Mint-Y sass/_colors.scss. Všechny hodnoty z tokenů (src/tokens.json).
+// Názvy proměnných jsou stejné jako upstream, aby _common/_dialogs/... zůstaly beze změny.
+@import "_mentha-tokens";
+
+$accent_color: mt('accent');
+$panel_bg: mt('island');
+$panel_fg: mt('fg');
+$bg_color: mt('surface_raised');
+$bg_color2: mt('surface_alt');
+$bg_color3: mt('border');
+$bg_color4: mt('surface_alt');
+$borders_color: mt('border');
+$separator_color: mt('hairline');
+$text_color: mt('fg');
+$fg_color: mt('fg');
+$noaccent_selected_fg_color: mt('fg');
+$dim_color: mt('fg_muted');
+$link_color: mt('accent_text');
+$osd_destructive_color: mt('error');
+$insensitive_fg_color: mt('fg_disabled');
+$entry_border: mt('border');
+$button_bg: mt('surface_alt');
+$corner_bar_highlighted: mt('fg_muted');
+
+$selected_fg_color: mt('accent_fg');
+$radius: mt-radius('sm');
+
+$menus_border_color: mt('hairline');
+$shadow_color: rgba(0, 0, 0, 0.35);
+
+$warning_color: mt('warning');
+$error_color: mt('error');
+$destructive_color: mt('error');
+
+$tooltip_bg_color: mt('tooltip_bg');
+$tooltip_fg_color: mt('tooltip_fg');
+$tooltip_border_color: mt('hairline');
+
+$osd_fg_color: mt('fg');
+$osd_bg_color: mt('surface_raised');
+$osd_button_bg: mt('hover');
+$osd_button_border: mt('border');
+$osd_entry_bg: mt('surface_alt');
+$osd_entry_border: mt('border');
+$osd_insensitive_fg_color: mt('fg_disabled');
+
+$entry_bg: mt('surface_alt');
+$button_border: mt('border');
+
+$corner_bar_unhighlighted: mt('border');

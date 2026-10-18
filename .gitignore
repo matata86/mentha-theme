@@ -1,0 +1,27 @@
+# build output and scratch
+/dist/
+/build/work/
+/build/gen/
+/qa/
+/src/mockup/
+__pycache__/
+
+# upstream: only what the build reads (see upstream/PINS.md)
+/upstream/mint-themes/*
+!/upstream/mint-themes/src/
+/upstream/mint-themes/src/*
+!/upstream/mint-themes/src/Mint-Y/
+/upstream/mint-themes/src/Mint-Y/*
+!/upstream/mint-themes/src/Mint-Y/cinnamon/
+!/upstream/mint-themes/src/Mint-Y/libadwaita-1.5/
+!/upstream/mint-themes/src/Mint-Y/libadwaita-1.7/
+!/upstream/mint-themes/debian/
+/upstream/mint-themes/debian/*
+!/upstream/mint-themes/debian/copyright
+/upstream/Orchis-theme/*
+!/upstream/Orchis-theme/COPYING
+!/upstream/Orchis-theme/src/
+/upstream/Orchis-theme/src/*
+!/upstream/Orchis-theme/src/_sass/
+!/upstream/Orchis-theme/src/gtk/
+!/upstream/Orchis-theme/src/gtk-2.0/

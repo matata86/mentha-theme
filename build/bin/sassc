@@ -1,0 +1,4 @@
+#!/bin/bash
+# shim: sassc (není nainstalován, chybí sudo) -> dart-sass přes npx. Podporuje `sassc [opts] in.scss out.css`.
+args=(); for a in "$@"; do case "$a" in -M|--sourcemap*|-t|--style) ;; expanded|compressed|nested|compact) ;; *) args+=("$a");; esac; done
+exec npx --yes sass@1.105.2 --no-source-map --silence-deprecation=import,global-builtin,slash-div,color-functions,if-function --quiet-deps "${args[@]}"

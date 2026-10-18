@@ -1,0 +1,31 @@
+; Geometrie Alberta pro ~/.config/albert/config, sekce [widgetsboxmodel]. Rozměry v px, písmo v pt.
+; {radius_*} = tokens.json radius, {shadow_*} = tokens.json shadow_popup (offset y, blur; větší z Light/Dark).
+; Albert rozmazává slaběji než CSS: shadow_size = 3× CSS blur (změřeno z PNG proti profilu 0 12px 28px).
+; Rytmus 4 px (změřeno z PNG): okno 656×308, pole 44 px (16 pt), řádek 48 px (10 pt + 9 pt = 32 px textu,
+; 2× padding 8), mezery 8; text pole lícuje s ikonou výsledku. 15 pt by dalo pole 43 px, 11 pt titulek řádek 50 px.
+; Rodina písma se bere ze systému (Inter 10, token font.ui); Albert umí nastavit jen velikosti.
+window_border_radius={radius_lg}
+window_border_width=1
+window_padding=8
+window_spacing=8
+window_width=640
+window_shadow_size={shadow_blur}
+window_shadow_offset={shadow_offset}
+clientShadow=true
+systemShadow=false
+input_border_radius={radius_sm}
+input_border_width=1
+input_padding=8
+input_font_size=16
+result_item_selection_border_radius={radius_sm}
+result_item_selection_border_width=0
+result_item_padding=8
+result_item_icon_size=32
+result_item_horizontal_spacing=12
+result_item_vertical_spacing=0
+result_item_text_font_size=10
+result_item_subtext_font_size=9
+action_item_selection_border_radius={radius_sm}
+action_item_selection_border_width=0
+action_item_padding=8
+action_item_font_size=10
