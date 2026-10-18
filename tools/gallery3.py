@@ -946,7 +946,7 @@ def dialog_page(kind):
         if opened:
             return False
         opened.append(1)
-        if kind == "dlg-message":
+        if kind.startswith("dlg-message"):
             d = Gtk.MessageDialog(transient_for=parent, modal=True, message_type=Gtk.MessageType.QUESTION,
                                   buttons=Gtk.ButtonsType.NONE, text="Smazat vybraný soubor?")
             d.format_secondary_text("Soubor „faktura-2026-014.pdf“ bude trvale odstraněn a nelze jej obnovit.")

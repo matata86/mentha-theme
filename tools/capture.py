@@ -81,6 +81,7 @@ SCENES = [
     gallery("menus", "Kontextové menu (pravý klik)", ["menus"], sid="gal-menus-context", steps=[rclick(700, 500), wait(500)]),
     gallery("typography", "Typografie: nadpisy, mono, odkazy, selectable, tooltip", ["typography", "controls"]),
     gallery("dlg-message", "MessageDialog (otázka, destructive tlačítko)", ["dialogs"], steps=[key("F5"), wait(2500)], maxwin=True),
+    gallery("dlg-message-focus", "MessageDialog: klávesnicový fokus na tlačítku (prstenec)", ["dialogs"], steps=[key("F5"), wait(2500), key("Tab"), wait(600)], maxwin=True),
     gallery("dlg-filechooser", "FileChooserDialog OPEN", ["dialogs", "lists"], steps=[key("F5"), wait(3500)]),
     gallery("dlg-about", "AboutDialog", ["dialogs"], steps=[key("F5"), wait(2500)]),
     gallery("dlg-color", "ColorChooserDialog", ["dialogs"], steps=[key("F5"), wait(2500)]),
