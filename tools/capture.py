@@ -98,6 +98,8 @@ EXTRA = [
          steps=[key("ctrl+2"), wait(1200), click(300, 213), wait(300), move(300, 305), wait(500)], crops=[("header-rows", (170, 100, 700, 150))]),
     nemo("nemo-compact-view", "Nemo: kompaktní pohled", steps=[key("ctrl+3"), wait(1200)]),
     nemo("nemo-deep-path", "Nemo: hluboká cesta v pathbaru", path=DEEP, crops=[NEMO_TOOLBAR]),
+    nemo("nemo-pathbar-forward", "Nemo: pathbar po kliknutí na nadřazený drobek (zbylé podsložky tlumeně vpravo)", path=DEEP,
+         steps=[click(365, 86), move(700, 800), wait(900)], crops=[NEMO_TOOLBAR]),
     nemo("nemo-location-entry", "Nemo: location entry (Ctrl+L)", steps=[key("ctrl+l"), wait(700)], crops=[NEMO_TOOLBAR]),
     nemo("nemo-search", "Nemo: hledání (Ctrl+F) s textem", steps=[key("ctrl+f"), wait(500), typ("a"), wait(1500)], crops=[NEMO_TOOLBAR]),
     nemo("nemo-rename-inline", "Nemo: inline přejmenování (F2); po snímku Escape (nic se nepřejmenuje)",
