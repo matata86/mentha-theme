@@ -1710,24 +1710,21 @@ statusbar button:checked { background-color: mt(accent_soft); }
   // prosvítala pod rgba výběrem a hoverem rámovaných seznamů. Klasické posuvníky textview mají
   // stejnou plochu bez linky a záporným okrajem 9 px (vyrovnaným paddingem) překryjí zaoblené
   // rohy textview, které k nim přiléhají; vnější rohy rámu dostanou oblouk r 9.
-  scrolledwindow.frame { border-color: mt(border_strong); border-radius: mt-radius(sm); }
-  scrolledwindow.frame > textview.view:not(.sourceview) { background-color: mt(surface_alt); border-radius: 9px; }
+  // Rám je hranatý: GTK3 obsah (hlavičku, řádky TreeView) neořízne podle radiusu, spodní oblouk by přemaloval
+  // a rám by vypadal přerušený (Historie aktualizací v mintUpdate).
+  scrolledwindow.frame { border-color: mt(border_strong); border-radius: 0; }
+  scrolledwindow.frame > textview.view:not(.sourceview) { background-color: mt(surface_alt); border-radius: 0; }
   scrolledwindow.frame > textview.view:not(.sourceview) ~ scrollbar,
   scrolledwindow.frame > textview.view:not(.sourceview) ~ junction { background-color: mt(surface_alt); border-color: transparent; }
-  scrolledwindow.frame > textview.view:not(.sourceview) ~ scrollbar.horizontal { margin-top: -9px; padding-top: 9px; border-radius: 0 0 9px 9px; }
-  scrolledwindow.frame > textview.view:not(.sourceview) ~ scrollbar.vertical { margin-left: -9px; padding-left: 9px; border-radius: 0 9px 9px 0; }
-  scrolledwindow.frame > textview.view:not(.sourceview) ~ junction { border: none; border-radius: 0 0 9px 0; }
+  scrolledwindow.frame > textview.view:not(.sourceview) ~ scrollbar.horizontal { margin-top: -9px; padding-top: 9px; border-radius: 0; }
+  scrolledwindow.frame > textview.view:not(.sourceview) ~ scrollbar.vertical { margin-left: -9px; padding-left: 9px; border-radius: 0; }
+  scrolledwindow.frame > textview.view:not(.sourceview) ~ junction { border: none; border-radius: 0; }
   // oba posuvníky: svislý se protáhne přes junction (17 px = výška vodorovného), zakryje jeho
   // zaoblený pravý konec i vlastní spodní oblouk nad junction; oblouk r 9 nese až v rohu rámu
   scrolledwindow.frame > textview.view:not(.sourceview) ~ scrollbar.horizontal ~ scrollbar.vertical { margin-bottom: -17px; padding-bottom: 17px; }
   scrolledwindow.frame > textview.view:not(.sourceview) ~ undershoot { background: none; }
   // GTK3 nemá :focus-within, prstenec kreslí přímo textview
-  scrolledwindow.frame > textview.view:not(.sourceview):focus { box-shadow: $mt-ring-focus; border-radius: 9px; }
-  // TreeView v rámu: GTK3 neořízne obsah podle radiusu rámu, hlavička a řádky by přetekly přes oblouk r 10
-  // (rám pak vypadá přerušený). Vnitřní oblouk r 9 dostane pozadí treeview a první/poslední tlačítko hlavičky.
-  scrolledwindow.frame > treeview.view { border-radius: 9px; }
-  scrolledwindow.frame > treeview.view header button:first-child { border-top-left-radius: 9px; }
-  scrolledwindow.frame > treeview.view header button:last-child { border-top-right-radius: 9px; }
+  scrolledwindow.frame > textview.view:not(.sourceview):focus { box-shadow: $mt-ring-focus; border-radius: 0; }
   frame > border { border-color: mt(border); border-radius: mt-radius(sm); }
   // popisek rámu mimo oblouk rohu (8 px od linky)
   frame > label { margin: 0 12px; }
