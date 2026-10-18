@@ -928,7 +928,29 @@ def page_typography(win):
     return b
 
 
-PAGES = {"buttons": page_buttons, "entries": page_entries, "toggles": page_toggles, "lists": page_lists,
+def page_hist(win):
+    """Okno Historie aktualizací z mintUpdate: obyčejné okno, VBox 12, ScrolledWindow IN (can_focus), TreeView rules_hint."""
+    box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, border_width=12)
+    st = Gtk.TreeStore(str, str, str, str, str)
+    for i in range(40):
+        st.append(None, ["2026-10-%02d - 22:56:%02d" % (18 - i // 4, 22 - i % 5), "flatpak-runtime", "org.gnome.Platform",
+                         "fcd9f49e...", "c3f351792c3b9937a01191ad5a03c1206fb7a8b5"])
+    tv = Gtk.TreeView(model=st, reorderable=True, rules_hint=True, enable_search=False)
+    for i, t in enumerate(("Datum", "Typ", "Aktualizace", "Stará verze", "Nová verze")):
+        c = Gtk.TreeViewColumn(t, Gtk.CellRendererText(), text=i)
+        c.set_sort_column_id(i); c.set_resizable(True)
+        tv.append_column(c)
+    sw = Gtk.ScrolledWindow(shadow_type=Gtk.ShadowType.IN, can_focus=True)
+    sw.add(tv)
+    box.pack_start(sw, True, True, 0)
+    bb = Gtk.ButtonBox(layout_style=Gtk.ButtonBoxStyle.END, spacing=15)
+    bb.add(Gtk.Button(label="Zavřít"))
+    box.pack_start(bb, False, True, 0)
+    box.set_size_request(1000, 500)
+    return box
+
+
+PAGES = {"hist": page_hist, "buttons": page_buttons, "entries": page_entries, "toggles": page_toggles, "lists": page_lists,
          "containers": page_containers, "headerbar": page_headerbar, "popovers": page_popovers,
          "menus": page_menus, "typography": page_typography}
 

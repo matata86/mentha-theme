@@ -1723,6 +1723,11 @@ statusbar button:checked { background-color: mt(accent_soft); }
   scrolledwindow.frame > textview.view:not(.sourceview) ~ undershoot { background: none; }
   // GTK3 nemá :focus-within, prstenec kreslí přímo textview
   scrolledwindow.frame > textview.view:not(.sourceview):focus { box-shadow: $mt-ring-focus; border-radius: 9px; }
+  // TreeView v rámu: GTK3 neořízne obsah podle radiusu rámu, hlavička a řádky by přetekly přes oblouk r 10
+  // (rám pak vypadá přerušený). Vnitřní oblouk r 9 dostane pozadí treeview a první/poslední tlačítko hlavičky.
+  scrolledwindow.frame > treeview.view { border-radius: 9px; }
+  scrolledwindow.frame > treeview.view header button:first-child { border-top-left-radius: 9px; }
+  scrolledwindow.frame > treeview.view header button:last-child { border-top-right-radius: 9px; }
   frame > border { border-color: mt(border); border-radius: mt-radius(sm); }
   // popisek rámu mimo oblouk rohu (8 px od linky)
   frame > label { margin: 0 12px; }
@@ -1792,6 +1797,15 @@ button.link:disabled, button.link:disabled label, *:link:disabled { color: mt(fg
 @include mt-infobar(action question, mt(accent_soft), mt(accent));
 @include mt-infobar(warning, rgba(mt(warning), 0.16), mt(warning));
 @include mt-infobar(error, rgba(mt(error), 0.14), mt(error));
+// Nemo: infobar je plochý pruh přes celou šířku pod lištou (Koš, přístupnost…), bez zaoblení a bez pruhu vlevo;
+// zaoblená karta přilepená k okraji okna vypadala useknutě
+.nemo-window infobar > revealer > box,
+.nemo-window infobar:backdrop > revealer > box,
+.nemo-window infobar:hover > revealer > box {
+  border-radius: 0;
+  box-shadow: none;
+  padding-left: 12px;
+}
 
 infobar > revealer > box button.flat image,
 infobar > revealer > box button image { color: mt(fg_muted); }

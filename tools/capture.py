@@ -72,6 +72,7 @@ SCENES = [
     gallery("buttons", "Tlačítka: běžná, suggested/destructive, flat, linked, toggle, kruhová, menu; vynucené stavy", ["controls"]),
     gallery("entries", "Entry, search, spin, combo, progress v entry; stavy normal/focus/disabled/error", ["controls"]),
     gallery("toggles", "Check, radio, switch, scale, progressbar, levelbar, spinner", ["controls"]),
+    gallery("hist", "Okno Historie aktualizací (mintUpdate): rámeček scrolledwindow s TreeView", ["lists"]),
     gallery("lists", "TreeView, ListBox, PlacesSidebar, Nemo-like sidebar, IconView", ["lists", "controls"]),
     gallery("containers", "Notebook, Frame, Expander, InfoBar, Paned, scrollbary", ["controls", "chrome"]),
     gallery("headerbar", "HeaderBar: titulek+podtitulek, StackSwitcher, MenuButton, search, linked", ["chrome", "controls"]),
