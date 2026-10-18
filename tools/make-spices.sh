@@ -30,7 +30,7 @@ Pair it with the Papirus icon theme and Bibata cursors for the intended look (th
 
 Based on Orchis (Vince Liuice) and Mint-Y (Linux Mint), both GPL-3.0.
 
-Support the author: [ko-fi.com/matata86](https://ko-fi.com/matata86)
+Support the author: [Ko-fi](https://ko-fi.com/matata86), [PayPal](https://paypal.me/matata86), Bitcoin \`bc1qhjwt8xxmuym0xsd50yfpvjph00386uz73gqwlc\`
 R
 done
 find "$out" -type f | wc -l | sed 's/^/souborů: /'; du -sh "$out"

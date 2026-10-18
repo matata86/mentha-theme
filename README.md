@@ -1,6 +1,8 @@
 # Mentha
 
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-support-ff5e5b?logo=ko-fi&logoColor=white)](https://ko-fi.com/matata86)
+[![PayPal](https://img.shields.io/badge/PayPal-donate-00457C?logo=paypal&logoColor=white)](https://paypal.me/matata86)
+[![Bitcoin](https://img.shields.io/badge/Bitcoin-donate-F7931A?logo=bitcoin&logoColor=white)](#support)
 
 A modern, calm blue theme for **Linux Mint Cinnamon** (6.x, GTK 3.24, libadwaita). Light and Dark variants,
 rounded geometry, flat buttons and switches, gradients only on level and progress bars. Built for
@@ -49,4 +51,10 @@ upstream files are kept unmodified in `upstream/` (see `upstream/PINS.md`).
 
 Licensed under **GPL-3.0**, see [LICENSE](LICENSE).
 
-If you like it, you can [buy me a coffee on Ko-fi](https://ko-fi.com/matata86).
+## Support
+
+If Mentha saves you time, you can support its development:
+
+- **Ko-fi:** https://ko-fi.com/matata86
+- **PayPal:** https://paypal.me/matata86
+- **Bitcoin:** `bc1qhjwt8xxmuym0xsd50yfpvjph00386uz73gqwlc`
