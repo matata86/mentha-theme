@@ -1521,24 +1521,22 @@ dialog .sidebar row {
   }
   &:disabled { color: mt(fg_disabled); }
 }
-// Oddělovač › leží vpravo od každého drobku včetně aktuálního (:checked), jako ve Win11 Průzkumníku. Po kliknutí na
-// nadřazenou složku Nemo nechá podsložky tlumeně vpravo; oddělovač proto musí patřit k drobku, ne k jeho pozici:
-// :last-child ani :nth-child nejde (za aktuálním drobkem je ještě skrytý uzel a pořadí uzlů se po kliknutí
-// nepřepočítá), chevron jen u :not(:checked) přeskakoval za podsložku. Chevron je v 12px průhledném borderu,
-// pilulka hover/checked je inset box-shadow jen v padding-boxu, takže ho nepřekryje. Elipsový radius vrací
-// pravému rohu zaoblení (vnitřní radius padding-boxu = vnější mínus šířka borderu).
-.path-bar.linked:not(.vertical) > button.toggle:not(.slider-button) {
-  border-right: 12px solid transparent;
-  border-radius: 14px 26px 26px 14px / 14px;
+// Oddělovač › leží VLEVO od každého drobku kromě prvního (sourozenecký `~`), tj. přesně mezi dvěma drobky a nikdy za
+// posledním. Vpravo oddělovač nejde: :last-child ani :nth-child nejsou spolehlivé (za aktuálním drobkem je skrytý
+// uzel, pořadí se po kliknutí nepřepočítá) a po kliku na nadřazenou složku Nemo nechá podsložky tlumeně vpravo.
+// Chevron je v 12px průhledném borderu, pilulka hover/checked je inset box-shadow jen v padding-boxu, takže ho
+// nepřekryje. Elipsový radius vrací levému rohu zaoblení (vnitřní radius padding-boxu = vnější mínus border).
+.path-bar.linked:not(.vertical) > button.toggle:not(.slider-button) ~ button.toggle:not(.slider-button) {
+  border-left: 12px solid transparent;
+  border-radius: 26px 14px 14px 26px / 14px;
   background-image: -gtk-recolor(url("assets/mentha-chevron-right-symbolic.svg"));
   background-origin: border-box;
   background-clip: border-box;
-  background-position: 100% center;
+  background-position: 0 center;
   background-size: 12px 12px;
   background-repeat: no-repeat;
+  color: mt(fg_muted);
 }
-// za aktivním drobkem žádný oddělovač (okraj 12 px zůstává kvůli stabilní šířce)
-.path-bar.linked:not(.vertical) > button.toggle:not(.slider-button):checked { background-image: none; }
 .path-bar.linked:not(.vertical) > button.toggle:not(.slider-button):not(:checked) {
   // prázdný image přidá 3 px: text 8 | 8 v padding-boxu (hover souměrný), boční nosnost písma ~1 px
   // dá ink 9 od hrany a 32-34 px text-text
