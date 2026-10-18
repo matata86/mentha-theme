@@ -1514,8 +1514,7 @@ dialog .sidebar row {
     border-image: none;
     box-shadow: inset 0 0 0 999px mt(accent_soft);
     background-color: transparent;
-    // color buttonu řídí barvu chevronu (recolor) – zůstává tlumená, akcent nese jen label/image
-    color: mt(fg_muted);
+    color: mt(accent_text);
     font-weight: 600;
 
     label, image { color: mt(accent_text); }
@@ -1538,6 +1537,8 @@ dialog .sidebar row {
   background-size: 12px 12px;
   background-repeat: no-repeat;
 }
+// za aktivním drobkem žádný oddělovač (okraj 12 px zůstává kvůli stabilní šířce)
+.path-bar.linked:not(.vertical) > button.toggle:not(.slider-button):checked { background-image: none; }
 .path-bar.linked:not(.vertical) > button.toggle:not(.slider-button):not(:checked) {
   // prázdný image přidá 3 px: text 8 | 8 v padding-boxu (hover souměrný), boční nosnost písma ~1 px
   // dá ink 9 od hrany a 32-34 px text-text
