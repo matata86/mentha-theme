@@ -1530,7 +1530,7 @@ dialog .sidebar row {
   }
   &:disabled { color: mt(fg_disabled); }
 }
-// Oddělovač › leží VPRAVO u každého drobku (jako v Průzkumníku). Kreslí ho každý drobek bezpodmínečně:
+// Oddělovač › leží VPRAVO u každého neaktuálního drobku. Kreslí ho každý drobek bezpodmínečně:
 // sourozenecký `~` i :nth-child GTK3 v pathbaru Nema vyhodnocuje nespolehlivě (uzly se zobrazují postupně, skryté
 // se přeskakují), oddělovače pak chyběly u 2.-3. drobku a po najetí myší naskočily s posunutým layoutem.
 // Chevron je v 12px průhledném borderu, pilulka hover/checked je inset box-shadow jen v padding-boxu, takže ho
@@ -1546,6 +1546,9 @@ dialog .sidebar row {
   background-repeat: no-repeat;
   color: mt(fg_muted);
 }
+// aktuální drobek (:checked) chevron nemá: bývá poslední, a za posledním se oddělovač nekreslí. Ve výjimečném případě
+// s tlumenými podsložkami vpravo odděluje drobky okraj pilulky. Border zůstává, aby se layout při změně stavu neměnil.
+.path-bar.linked:not(.vertical) > button.toggle:not(.slider-button):checked { background-image: none; }
 .path-bar.linked:not(.vertical) > button.toggle:not(.slider-button):not(:checked) {
   // prázdný image přidá 3 px: text 8 | 8 v padding-boxu (hover souměrný), boční nosnost písma ~1 px
   // dá ink 9 od hrany a 32-34 px text-text
