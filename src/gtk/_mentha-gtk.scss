@@ -2005,8 +2005,8 @@ notebook.frame > header.bottom { border-radius: 0 0 mt-radius(xs) mt-radius(xs);
 
     &:hover { background-color: mt(hover); }
     // outline GTK3 kreslí jen při klávesnicovém fokusu (výchozí tlačítko po otevření bez prstence)
-    // fokus = tentýž 1px rámeček v barvě fokusu: tlačítko nesmí nabýt na velikosti ani tloušťce oproti sousedovi
-    &:focus { box-shadow: inset 0 0 0 1px mt(focus); outline: none; }
+    // fokus = tentýž 1px rámeček, neutrální (modrý rám na „Smazat“ působil jako zvýraznění akce): tlačítko nesmí nabýt na velikosti ani tloušťce oproti sousedovi
+    &:focus { box-shadow: inset 0 0 0 1px mt(fg_muted); outline: none; }
   }
   messagedialog.csd .dialog-action-box button:not(:last-child) { margin-right: 8px; }
 
