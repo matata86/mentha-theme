@@ -73,6 +73,7 @@ SCENES = [
     gallery("entries", "Entry, search, spin, combo, progress v entry; stavy normal/focus/disabled/error", ["controls"]),
     gallery("toggles", "Check, radio, switch, scale, progressbar, levelbar, spinner", ["controls"]),
     gallery("spin", "GtkSpinner 16/32/96 px (vlastní ikona kroužek + oblouk)", ["controls"]),
+    gallery("upd", "Hlavní okno mintUpdate: rámeček s TreeView nad notebookem", ["lists"]),
     gallery("hist", "Okno Historie aktualizací (mintUpdate): rámeček scrolledwindow s TreeView", ["lists"]),
     gallery("lists", "TreeView, ListBox, PlacesSidebar, Nemo-like sidebar, IconView", ["lists", "controls"]),
     gallery("containers", "Notebook, Frame, Expander, InfoBar, Paned, scrollbary", ["controls", "chrome"]),

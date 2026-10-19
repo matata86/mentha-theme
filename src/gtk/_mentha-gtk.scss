@@ -1725,7 +1725,14 @@ statusbar button:checked { background-color: mt(accent_soft); }
   // rohy textview, které k nim přiléhají; vnější rohy rámu dostanou oblouk r 9.
   // Rám je hranatý: GTK3 obsah (hlavičku, řádky TreeView) neořízne podle radiusu, spodní oblouk by přemaloval
   // a rám by vypadal přerušený (Historie aktualizací v mintUpdate).
-  scrolledwindow.frame { border-color: mt(border_strong); border-radius: 0; }
+  scrolledwindow.frame { border-color: mt(border_strong); border-radius: mt-radius(xs); }
+  // GTK3 obsah rámu podle radiusu neořízne. Oblouk proto kreslí jen scrolledwindow (podklad surface):
+  // TreeView a jeho hlavička jsou průhledné a nepřemalují rohy; první/poslední záhlaví kopíruje oblouk.
+  scrolledwindow.frame { background-color: mt(surface); }
+  scrolledwindow.frame > treeview.view { background-color: transparent; }
+  scrolledwindow.frame > treeview.view header button { background-color: transparent; }
+  scrolledwindow.frame > treeview.view header button:first-child { border-top-left-radius: mt-radius(xs); }
+  scrolledwindow.frame > treeview.view header button:last-child { border-top-right-radius: mt-radius(xs); }
   scrolledwindow.frame > textview.view:not(.sourceview) { background-color: mt(surface_alt); border-radius: 0; }
   scrolledwindow.frame > textview.view:not(.sourceview) ~ scrollbar,
   scrolledwindow.frame > textview.view:not(.sourceview) ~ junction { background-color: mt(surface_alt); border-color: transparent; }
@@ -1910,6 +1917,10 @@ notebook > header > tabs > tab:not(:checked) button:hover image { color: mt(fg);
 // Karty Nema a xed jsou reorderable: Orchis `notebook > header tab:checked.reorderable-page` (0,2,3) přebije
 // výplň karty. Vrací se stejná logika jako u ostatních notebooků: aktivní karta = plocha stránky s obrysem.
 notebook > header > tabs > tab:checked.reorderable-page { background-color: mt(surface); }
+// Rám notebooku se stejným jemným obloukem jako rámy seznamů (Orchis má 5 px)
+notebook.frame, notebook.frame > stack { border-radius: mt-radius(xs); }
+notebook.frame > header.top { border-radius: mt-radius(xs) mt-radius(xs) 0 0; }
+notebook.frame > header.bottom { border-radius: 0 0 mt-radius(xs) mt-radius(xs); }
 
 // -----------------------------------------------------------------------------
 // Dialogy: okraje 16 px, mezera tlačítek 8 px (GTK3)

@@ -950,6 +950,30 @@ def page_hist(win):
     return box
 
 
+def page_upd(win):
+    """Hlavní okno mintUpdate: Paned, nahoře ScrolledWindow IN + TreeView, dole Notebook se třemi stránkami ScrolledWindow(border 2)+TextView."""
+    box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+    pn = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
+    st = Gtk.ListStore(bool, str, str)
+    st.append([True, "claude-desktop", "2.42304.2"])
+    tv = Gtk.TreeView(model=st)
+    tv.append_column(Gtk.TreeViewColumn("Přejít na novější verzi", Gtk.CellRendererToggle(), active=0))
+    tv.append_column(Gtk.TreeViewColumn("Název", Gtk.CellRendererText(), text=1))
+    tv.append_column(Gtk.TreeViewColumn("Nová verze", Gtk.CellRendererText(), text=2))
+    sw = Gtk.ScrolledWindow(shadow_type=Gtk.ShadowType.IN, can_focus=True); sw.add(tv)
+    pn.pack1(sw, True, False)
+    nb = Gtk.Notebook(height_request=150)
+    for t in ("Informace", "Balíčky", "Seznam změn"):
+        s2 = Gtk.ScrolledWindow(can_focus=True, border_width=2)
+        s2.add(Gtk.TextView(editable=False, wrap_mode=Gtk.WrapMode.WORD, left_margin=6))
+        nb.append_page(s2, Gtk.Label(label=t))
+    pn.pack2(nb, False, False)
+    box.pack_start(pn, True, True, 0)
+    box.pack_start(Gtk.Statusbar(), False, True, 0)
+    box.set_size_request(1000, 520)
+    return box
+
+
 def page_spin(win):
     box = Gtk.Box(spacing=40, border_width=40, halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
     for px in (16, 32, 96):
@@ -957,7 +981,7 @@ def page_spin(win):
     return box
 
 
-PAGES = {"spin": page_spin, "hist": page_hist, "buttons": page_buttons, "entries": page_entries, "toggles": page_toggles, "lists": page_lists,
+PAGES = {"upd": page_upd, "spin": page_spin, "hist": page_hist, "buttons": page_buttons, "entries": page_entries, "toggles": page_toggles, "lists": page_lists,
          "containers": page_containers, "headerbar": page_headerbar, "popovers": page_popovers,
          "menus": page_menus, "typography": page_typography}
 
