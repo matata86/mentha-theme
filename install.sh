@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 # ./install.sh --uninstall: odebere motiv i chevron ikony z hicolor
 if [ "${1:-}" = "--uninstall" ]; then
   rm -rf "$HOME/.themes/Mentha-Light" "$HOME/.themes/Mentha-Dark"
-  rm -f "$HOME"/.local/share/icons/hicolor/scalable/actions/mentha-chevron-{down,up,left,right}-symbolic.svg
+  rm -f "$HOME"/.local/share/icons/hicolor/scalable/actions/mentha-chevron-{down,up,left,right}-symbolic.svg "$HOME"/.local/share/icons/hicolor/scalable/actions/mentha-spinner-symbolic.svg
   gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
   echo "odebráno: ~/.themes/Mentha-*, hicolor mentha-chevron-*"; exit 0
 fi
@@ -25,6 +25,7 @@ done
 ICON_DST="$HOME/.local/share/icons/hicolor/scalable/actions"
 mkdir -p "$ICON_DST"
 for d in down up left right; do cp "src/gtk/assets/mentha-chevron-$d-symbolic.svg" "$ICON_DST/"; done
+cp src/gtk/assets/mentha-spinner-symbolic.svg "$ICON_DST/"
 gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
 
 # reload: přepnout na chvíli jinam a zpět (GTK i Cinnamon shell čtou CSS jen při změně názvu)

@@ -1644,6 +1644,10 @@ paned > separator {
     &:dir(rtl):checked { -gtk-icon-source: -gtk-icontheme("mentha-chevron-down-symbolic"); }
   }
 
+  // Spinner: téma ikon dodává process-working-symbolic jako plný kotouč s dírou (Tela-circle), který se jen otáčí
+  // jako „hrouda“. Vlastní ikona = slabý kroužek + akcentový oblouk (hicolor přes install.sh).
+  spinner, spinner:checked { -gtk-icon-source: -gtk-icontheme("mentha-spinner-symbolic"); color: mt(accent); }
+
   menu menuitem arrow:dir(ltr), popover modelbutton.flat arrow.right {
     -gtk-icon-source: -gtk-icontheme("mentha-chevron-right-symbolic");
   }

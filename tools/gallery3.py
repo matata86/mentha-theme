@@ -950,7 +950,14 @@ def page_hist(win):
     return box
 
 
-PAGES = {"hist": page_hist, "buttons": page_buttons, "entries": page_entries, "toggles": page_toggles, "lists": page_lists,
+def page_spin(win):
+    box = Gtk.Box(spacing=40, border_width=40, halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
+    for px in (16, 32, 96):
+        sp = Gtk.Spinner(width_request=px, height_request=px); sp.start(); box.add(sp)
+    return box
+
+
+PAGES = {"spin": page_spin, "hist": page_hist, "buttons": page_buttons, "entries": page_entries, "toggles": page_toggles, "lists": page_lists,
          "containers": page_containers, "headerbar": page_headerbar, "popovers": page_popovers,
          "menus": page_menus, "typography": page_typography}
 
