@@ -131,20 +131,7 @@ $m-island-shadow: if($variant == 'light', 0 1px 3px rgba(24, 40, 80, 0.16), 0 1p
 
 .panel-top, .panel-bottom {
   #panelCenter .applet-label, .panelCenter .applet-label { font-weight: 600; }
-  // tlačítko menu = plný akcentní čtvereček (první applet levé zóny; bez gradientu)
-  // čtverec 22x22 jako výška boxu: glyf „lm“ 14 (menu applet: menu-icon linuxmint-logo-simple-symbolic, menu-icon-size 14) + .system-status-icon padding 2x1 + 2x3
-  #panelLeft > .applet-box:first-child, .panelLeft > .applet-box:first-child {
-    background-color: $m-acc;
-    color: $m-acc-fg;
-    border-radius: 7px;
-    margin: 1px 4px 1px 0;
-    padding: 0 3px;
-  }
-  #panelLeft > .applet-box:first-child:hover, .panelLeft > .applet-box:first-child:hover { background-color: $m-acc-hover; }
-  #panelLeft > .applet-box:first-child:checked, .panelLeft > .applet-box:first-child:checked { background-color: $m-acc-pressed; color: $m-acc-fg; }
-  #panelLeft > .applet-box:first-child .applet-icon, .panelLeft > .applet-box:first-child .applet-icon,
-  #panelLeft > .applet-box:first-child .system-status-icon, .panelLeft > .applet-box:first-child .system-status-icon,
-  #panelLeft > .applet-box:first-child .applet-label, .panelLeft > .applet-box:first-child .applet-label { color: $m-acc-fg; }
+  // tlačítko menu nemá vlastní třídu a jeho pozici určuje uživatel, proto žádná akcentní výplň podle pořadí: vypadá jako ostatní applety
 }
 
 .applet-separator { padding: 1px 4px; }
