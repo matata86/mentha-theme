@@ -1052,6 +1052,15 @@ row.activatable:selected:hover { background-color: mt(selection_strong); }
 // jediná čistá varianta je souvislý pás s radiusem 0.
 iconview.cell:selected, flowboxchild:selected { border-radius: mt-radius(sm); }
 
+// Výběrový obdélník (Nemo plocha i okna): poloprůhledný akcent, jinak je plný bílý.
+.rubberband, rubberband, .view.rubberband, iconview.view.rubberband, widget.view.rubberband,
+.nemo-desktop.view.rubberband, .nemo-canvas-item.rubberband,
+.content-view rubberband, treeview.view rubberband, flowbox rubberband {
+  background-color: rgba(mt(accent), 0.2);
+  border: 1px solid mt(accent);
+  border-radius: 0;
+}
+
 treeview.view,
 treeview.view.cell,
 treeview.view:selected,
