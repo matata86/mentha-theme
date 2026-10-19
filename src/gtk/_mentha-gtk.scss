@@ -1530,18 +1530,18 @@ dialog .sidebar row {
   }
   &:disabled { color: mt(fg_disabled); }
 }
-// Oddělovač › leží VLEVO od každého drobku kromě prvního (sourozenecký `~`), tj. přesně mezi dvěma drobky a nikdy za
-// posledním. Vpravo oddělovač nejde: :last-child ani :nth-child nejsou spolehlivé (za aktuálním drobkem je skrytý
-// uzel, pořadí se po kliknutí nepřepočítá) a po kliku na nadřazenou složku Nemo nechá podsložky tlumeně vpravo.
+// Oddělovač › leží VPRAVO u každého drobku (jako v Průzkumníku). Kreslí ho každý drobek bezpodmínečně:
+// sourozenecký `~` i :nth-child GTK3 v pathbaru Nema vyhodnocuje nespolehlivě (uzly se zobrazují postupně, skryté
+// se přeskakují), oddělovače pak chyběly u 2.-3. drobku a po najetí myší naskočily s posunutým layoutem.
 // Chevron je v 12px průhledném borderu, pilulka hover/checked je inset box-shadow jen v padding-boxu, takže ho
-// nepřekryje. Elipsový radius vrací levému rohu zaoblení (vnitřní radius padding-boxu = vnější mínus border).
-.path-bar.linked:not(.vertical) > button.toggle:not(.slider-button) ~ button.toggle:not(.slider-button) {
-  border-left: 12px solid transparent;
-  border-radius: 26px 14px 14px 26px / 14px;
+// nepřekryje. Elipsový radius vrací pravému rohu zaoblení (vnitřní radius padding-boxu = vnější mínus border).
+.path-bar.linked:not(.vertical) > button.toggle:not(.slider-button) {
+  border-right: 12px solid transparent;
+  border-radius: 14px 26px 26px 14px / 14px;
   background-image: -gtk-recolor(url("assets/mentha-chevron-right-symbolic.svg"));
   background-origin: border-box;
   background-clip: border-box;
-  background-position: 0 center;
+  background-position: right center;
   background-size: 12px 12px;
   background-repeat: no-repeat;
   color: mt(fg_muted);
@@ -1573,8 +1573,8 @@ dialog .sidebar row {
   background-image: -gtk-recolor(url("assets/mentha-chevron-left-symbolic.svg"));
   background-repeat: no-repeat;
   background-position: center;
-  // glyf chevronu zabírá ~13/16 viewBoxu: 15 px => ink 12 px (stejně jako glyfy drobků)
-  background-size: 15px 15px;
+  // glyf chevronu zabírá ~13/16 viewBoxu: stejná velikost jako oddělovače drobků (12 px => ink 10 px)
+  background-size: 12px 12px;
 
   &:first-child { margin-left: 12px; }
   &:nth-child(2) { background-image: -gtk-recolor(url("assets/mentha-chevron-right-symbolic.svg")); margin: 6px 0 6px 2px; }
