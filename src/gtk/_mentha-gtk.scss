@@ -1728,7 +1728,7 @@ statusbar button:checked { background-color: mt(accent_soft); }
   scrolledwindow.frame { border-color: mt(border_strong); border-radius: mt-radius(xs); }
   // GTK3 obsah rámu podle radiusu neořízne. Oblouk proto kreslí jen scrolledwindow (podklad surface):
   // TreeView a jeho hlavička jsou průhledné a nepřemalují rohy; první/poslední záhlaví kopíruje oblouk.
-  scrolledwindow.frame { background-color: mt(surface); }
+  scrolledwindow.frame { background-color: mt(surface); padding: 2px; }
   scrolledwindow.frame > treeview.view { background-color: transparent; }
   scrolledwindow.frame > treeview.view header button { background-color: transparent; }
   scrolledwindow.frame > treeview.view header button:first-child { border-top-left-radius: mt-radius(xs); }
@@ -1964,9 +1964,14 @@ notebook.frame > header.bottom { border-radius: 0 0 mt-radius(xs) mt-radius(xs);
   dialog .dialog-vbox > filechooser + .dialog-action-box {
     margin: 11px -11px -11px;
     padding: 6px 10px;
-    // linku nad filtrem kreslí GtkActionBar filechooseru; druhá nad tlačítky by tvořila dvojitou linku
-    border-top: none;
+    // hairline nad tlačítky; řádek filtru (GtkActionBar) má vlastní linku nad sebou, mezi nimi je celý řádek
+    border-top: 1px solid mt(border);
   }
+  // hairline pod hlavičkou dialogů (ne messagedialog): odděluje titulek od obsahu
+  dialog.csd:not(messagedialog) headerbar.titlebar, dialog.csd:not(messagedialog) .titlebar { border-bottom: 1px solid mt(border); }
+  // ColorChooser a About mají action box až k okraji: stejná hairline
+  dialog .dialog-vbox > colorchooser + .dialog-action-box,
+  dialog .dialog-vbox > box.vertical:first-child:nth-last-child(2) + .dialog-action-box { border-top: 1px solid mt(border); }
 
   // GtkColorChooserDialog nedává tlačítku .suggested-action, jen .default: potvrzení v akcentu jako v ostatních dialozích
   dialog .dialog-vbox > colorchooser + .dialog-action-box button.default {
