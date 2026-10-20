@@ -1994,6 +1994,12 @@ notebook.frame > header.bottom { border-radius: 0 0 mt-radius(xs) mt-radius(xs);
   messagedialog .dialog-action-box { padding: 0 16px 16px; margin: 0; }
   messagedialog.csd .dialog-action-box { margin-top: 0; }
 
+  // i bez .csd: dialog se SSD titulkem (Muffin, např. „Uložit“ při přepsání souboru) jinak bral obecný modrý button:focus;
+  // :first-child/:last-child/:not(:disabled) přebijí .linked:not(.vertical) > button (radius 0), action area je .linked
+  messagedialog .dialog-action-box button,
+  messagedialog .dialog-action-box button:first-child,
+  messagedialog .dialog-action-box button:last-child,
+  messagedialog .dialog-action-box button:not(:disabled),
   messagedialog.csd .dialog-action-box button,
   messagedialog.csd .dialog-action-box button:first-child,
   messagedialog.csd .dialog-action-box button:last-child,
@@ -2011,8 +2017,10 @@ notebook.frame > header.bottom { border-radius: 0 0 mt-radius(xs) mt-radius(xs);
     // fokus = tentýž 1px rámeček, neutrální (modrý rám na „Smazat“ působil jako zvýraznění akce): tlačítko nesmí nabýt na velikosti ani tloušťce oproti sousedovi
     &:focus { box-shadow: inset 0 0 0 1px mt(fg_muted); outline: none; }
   }
+  messagedialog .dialog-action-box button:not(:last-child),
   messagedialog.csd .dialog-action-box button:not(:last-child) { margin-right: 8px; }
 
+  messagedialog .dialog-action-box button.suggested-action,
   messagedialog.csd .dialog-action-box button.suggested-action,
   messagedialog.csd .dialog-action-box button.suggested-action:not(:disabled) {
     background-color: mt(accent);
@@ -2022,6 +2030,7 @@ notebook.frame > header.bottom { border-radius: 0 0 mt-radius(xs) mt-radius(xs);
     &:hover { background-color: mt(accent_hover); }
     &:focus { box-shadow: none; outline: $mt-outline; outline-offset: 2px; @include mt-ol(mt-radius(sm)); }
   }
+  messagedialog .dialog-action-box button.destructive-action,
   messagedialog.csd .dialog-action-box button.destructive-action,
   messagedialog.csd .dialog-action-box button.destructive-action:not(:disabled) {
     background-color: mt(error);
