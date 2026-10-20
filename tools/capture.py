@@ -27,6 +27,8 @@ TOOLS = os.path.join(ROOT, "tools")
 HOME = os.path.expanduser("~")
 FIX = os.path.join(HOME, ".cache", "mentha-qa", "fixtures")
 DEEP = os.path.join(HOME, "System", "FNS projekty", "AAA_CLAUDE", "Infrastruktura", "Asus")
+# cesta delší než pathbar maximalizovaného okna: Nemo ukáže posuvné šipky « »
+OVERFLOW = os.path.join(FIX, "pathbar", *[f"velmi-dlouha-slozka-{n}" for n in ("jedna", "dva", "tri", "ctyri", "pet", "sest")])
 W, H = 1400, 1000
 # GTK4 aplikace, které sice linkují libadwaita, ale nevolají adw_init (GtkApplication) -> libadwaita motiv nenačítají, vzhled dělá gtk-4.0
 NO_ADW_INIT = {"simple-scan"}
@@ -64,6 +66,7 @@ def nemo(sid, desc, steps=(), crops=(), path=None, tags=("nemo",), maxwin=True, 
 NEMO_TOOLBAR = ("toolbar-pathbar", (0, 66, 640, 40))
 NEMO_SIDEBAR = ("sidebar", (0, 105, 172, 600))  # včetně Souborového systému a disk baru
 NEMO_STATUS = ("statusbar", (900, 962, 500, 38))
+NEMO_PATHBAR_FULL = ("pathbar-full", (0, 66, 1400, 40))
 
 GENERIC_MENU = [click(34, 50), wait(500)]
 
@@ -104,6 +107,19 @@ EXTRA = [
     nemo("nemo-deep-path", "Nemo: hluboká cesta v pathbaru", path=DEEP, crops=[NEMO_TOOLBAR]),
     nemo("nemo-pathbar-forward", "Nemo: pathbar po kliknutí na nadřazený drobek (zbylé podsložky tlumeně vpravo)", path=DEEP,
          steps=[click(365, 86), move(700, 800), wait(900)], crops=[NEMO_TOOLBAR]),
+    # oddělovače drobků při pozici zastaralé z předchozí cesty: nové drobky v už otevřeném okně, cesta mimo domov
+    # po cestě s domovem jako kořenem (« zmizí), přetečení s « » a posun vlevo
+    nemo("nemo-pathbar-into", "Nemo: pathbar po přechodu do hlubší složky v otevřeném okně", path=os.path.dirname(os.path.dirname(DEEP)),
+         steps=[key("ctrl+l"), wait(500), typ(DEEP), key("Return"), wait(1500), move(700, 800), wait(500)], crops=[NEMO_PATHBAR_FULL]),
+    nemo("nemo-pathbar-root", "Nemo: pathbar po přechodu z domova do /usr/share/icons", path=DEEP,
+         steps=[key("ctrl+l"), wait(500), typ("/usr/share/icons"), key("Return"), wait(1500), move(700, 800), wait(500)], crops=[NEMO_PATHBAR_FULL]),
+    nemo("nemo-pathbar-root-new", "Nemo: nové okno v /usr/share/icons", path="/usr/share/icons", crops=[NEMO_PATHBAR_FULL]),
+    nemo("nemo-pathbar-trash", "Nemo: pathbar po přechodu z domova do Koše (jediný drobek)", path=DEEP,
+         steps=[key("ctrl+l"), wait(500), typ("trash:///"), key("Return"), wait(1500), move(700, 800), wait(500)], crops=[NEMO_PATHBAR_FULL]),
+    nemo("nemo-pathbar-trash-new", "Nemo: nové okno v Koši", path="trash:///", crops=[NEMO_PATHBAR_FULL]),
+    nemo("nemo-pathbar-overflow", "Nemo: přetečená cesta s posuvnými šipkami", path=OVERFLOW, crops=[NEMO_PATHBAR_FULL]),
+    nemo("nemo-pathbar-overflow-scroll", "Nemo: přetečená cesta po dvou posunech « vlevo", path=OVERFLOW,
+         steps=[click(142, 86), wait(400), click(142, 86), wait(400), move(700, 800), wait(500)], crops=[NEMO_PATHBAR_FULL]),
     nemo("nemo-location-entry", "Nemo: location entry (Ctrl+L)", steps=[key("ctrl+l"), wait(700)], crops=[NEMO_TOOLBAR]),
     nemo("nemo-search", "Nemo: hledání (Ctrl+F) s textem", steps=[key("ctrl+f"), wait(500), typ("a"), wait(1500)], crops=[NEMO_TOOLBAR]),
     nemo("nemo-rename-inline", "Nemo: inline přejmenování (F2); po snímku Escape (nic se nepřejmenuje)",
@@ -198,6 +214,7 @@ def sh(cmd, **kw):
 
 def ensure_fixtures():
     os.makedirs(FIX, exist_ok=True)
+    os.makedirs(OVERFLOW, exist_ok=True)
     zp = os.path.join(FIX, "demo.zip")
     if not os.path.exists(zp):
         with zipfile.ZipFile(zp, "w") as z:

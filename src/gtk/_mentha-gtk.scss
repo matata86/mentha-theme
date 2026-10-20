@@ -1546,9 +1546,34 @@ dialog .sidebar row {
   background-repeat: no-repeat;
   color: mt(fg_muted);
 }
-// aktuální drobek (:checked) chevron nemá: bývá poslední, a za posledním se oddělovač nekreslí. Ve výjimečném případě
-// s tlumenými podsložkami vpravo odděluje drobky okraj pilulky. Border zůstává, aby se layout při změně stavu neměnil.
+// GtkPathBar (dialog souborů): aktuální drobek chevron nemá, bývá poslední. Border zůstává, layout se při změně stavu nemění.
 .path-bar.linked:not(.vertical) > button.toggle:not(.slider-button):checked { background-image: none; }
+// Nemo: oddělovač › leží VLEVO od drobku. Pozice drobku v GTK3 zastarává: NemoPathBar přepisuje get_path_for_child
+// (sourozenci = jen viditelné uzly [« slider, drobky, » slider]), cesta se ale uloží při přepočtu stylu a platí
+// až do dalšího (hover, fokus okna). Posun, skrytí ani child_ordering_changed (gtk_style_context_invalidate) styl
+// nepřepočtou; nové drobky se počítají před alokací (viditelné všechny i oba slidery) a v mezistavech při otevírání
+// okna (užší lišta, přetečení). Proto o chevronu pozice skoro nerozhoduje:
+// - za posledním drobkem nic není (chevron vpravo tam u nového okna zůstával), za aktuálním s podsložkami vpravo nechybí;
+// - první viditelný drobek za « zakryje stín « (níž), ať si drobek o pozici myslí cokoli;
+// - kořen / (jediný drobek s ikonou přímo v tlačítku, bez boxu) zakryje stín vlastní ikony;
+// - poziční výjimky jen pro první drobek bez « (:first-child) a jediný drobek za « (Koš, Síť po přechodu z domova,
+//   nové okno: « i » jsou před první alokací viditelné); obecné `« + drobek` by zhaslo drobek z mezistavu přetečení.
+// color buttonu řídí barvu chevronu (recolor): u aktuálního zůstává tlumená, akcent nese jen label/image.
+.nemo-window .path-bar.linked:not(.vertical) > button.toggle:not(.slider-button),
+.nemo-window .path-bar.linked:not(.vertical) > button.toggle:not(.slider-button):checked {
+  border-right-width: 0;
+  border-left: 12px solid transparent;
+  border-radius: 26px 14px 14px 26px / 14px;
+  background-image: -gtk-recolor(url("assets/mentha-chevron-right-symbolic.svg"));
+  background-position: left center;
+}
+.nemo-window .path-bar.linked:not(.vertical) > button.toggle:not(.slider-button):checked { color: mt(fg_muted); }
+.nemo-window .path-bar.linked:not(.vertical) > button.toggle:not(.slider-button):first-child,
+.nemo-window .path-bar.linked:not(.vertical) > button.slider-button + button.toggle:not(.slider-button):last-child,
+.nemo-window .path-bar.linked:not(.vertical) > button.slider-button + button.toggle:not(.slider-button):nth-last-child(2) { background-image: none; }
+// stín ikony kořene: 12 px široký (spread -2 z 16px ikony), posun = border 12 + padding vlevo (5 / aktuální 10) + 2
+.nemo-window .path-bar.linked:not(.vertical) > button.toggle:not(.slider-button) > image { box-shadow: -19px 0 0 -2px mt(surface); }
+.nemo-window .path-bar.linked:not(.vertical) > button.toggle:not(.slider-button):checked > image { box-shadow: -24px 0 0 -2px mt(surface); }
 .path-bar.linked:not(.vertical) > button.toggle:not(.slider-button):not(:checked) {
   // prázdný image přidá 3 px: text 8 | 8 v padding-boxu (hover souměrný), boční nosnost písma ~1 px
   // dá ink 9 od hrany a 32-34 px text-text
@@ -1583,6 +1608,26 @@ dialog .sidebar row {
   &:nth-child(2) { background-image: -gtk-recolor(url("assets/mentha-chevron-right-symbolic.svg")); margin: 6px 0 6px 2px; }
   &:hover { background-color: mt(hover); box-shadow: none; color: mt(fg); }
   &:disabled { opacity: 0; }
+}
+// Nemo: « kreslí drobky až po nich (forall), stín 14 px vpravo (margin 2 + border drobku 12) v barvě lišty proto zakryje
+// chevron drobku hned za ním, i když drobek o své pozici neví. Ve všech stavech; neaktivní « místo opacity 0
+// jen bez obrázku, aby kryl dál. « je vždy první: odsazení bez :first-child (« přepočtená ve skrytu žádnou pozici nemá).
+// » se pozná podle drobku před sebou, ne podle :nth-child(2) (to platí jen před první alokací, pak » ukazovala «).
+.nemo-window .path-bar.linked:not(.vertical) > button.slider-button {
+  margin-left: 12px;
+  &, &:hover, &:active, &:disabled, &:backdrop, &:backdrop:hover, &:backdrop:disabled { box-shadow: 14px 0 0 0 mt(surface); }
+}
+.nemo-window .path-bar.linked:not(.vertical) > button.toggle + button.slider-button,
+.nemo-window .path-bar.linked:not(.vertical) > button.slider-button + button.slider-button {
+  background-image: -gtk-recolor(url("assets/mentha-chevron-right-symbolic.svg"));
+  margin: 6px 0 6px 2px;
+}
+.nemo-window .path-bar.linked:not(.vertical) > button.slider-button:disabled,
+.nemo-window .path-bar.linked:not(.vertical) > button.toggle + button.slider-button:disabled,
+.nemo-window .path-bar.linked:not(.vertical) > button.slider-button + button.slider-button:disabled {
+  opacity: 1;
+  background-color: transparent;
+  background-image: none;
 }
 
 // -----------------------------------------------------------------------------
