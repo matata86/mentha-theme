@@ -1648,10 +1648,10 @@ stackswitcher:not(.vertical) > button:not(.suggested-action):not(.destructive-ac
   box-shadow: none;
   background-image: none;
 
-  // fokus: Orchis `:focus:not(:hover)` kreslí prstenec box-shadow i po kliknutí myší. Segmenty fokus kliknutím
-  // nepřebírají (GtkStackSwitcher focus-on-click FALSE), prstenec proto zůstával na prvním segmentu. Zůstává jen
-  // outline z obecného button:focus (GTK3 ho kreslí jen při viditelném fokusu z klávesnice) ve tvaru pilulky
-  &:focus, &:focus:not(:hover) { box-shadow: none; @include mt-ol(mt-radius(pill)); }
+  // fokus: žádný prstenec ani outline. Segmenty fokus kliknutím nepřebírají (focus-on-click FALSE), fokus tak trvale
+  // sedí na prvním segmentu; po jakékoli klávese v okně (hledání v Nastavení) ho GTK3 ukazuje napořád a rámeček kolem
+  // neaktivního segmentu vypadal jako druhý výběr (Správa napájení, 2026-10-25). Ani plná barva textu (vypadá jako vybraný).
+  &:focus, &:focus:not(:hover) { box-shadow: none; outline: none; }
   // neaktivní segment má tlumený text v každém kontextu. Orchis tlumí jen v toolbar/titlebar a jejich `button:focus`
   // vrací plnou barvu, takže segment s fokusem (nastavení appletů: switcher v Gtk.Toolbar) vypadal jako vybraný
   &:not(:checked):not(:disabled):not(:backdrop) { color: mt(fg_muted); }
