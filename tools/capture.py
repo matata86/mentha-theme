@@ -200,6 +200,9 @@ EXTRA = [
     # LIMIT harnessu (P6-13, ADW-501/502): skupina předvoleb je v Broadway úzká (~174 px, popisky se lámou po písmenech) i se stock Adwaita
     # (ADW_DEBUG_THEME_NAME=Adwaita: stejná šířka 174 px jako Mentha, qa/round-6-i2-fix-libadwaita-stock) -> velikost AdwDialog/AdwPreferencesPage
     # v Broadway, ne vada motivu. Totéž platí pro simplescan-prefs-*. Neladit motiv podle této zúžené skupiny.
+    # 2026-10-25: fokus z klávesnice na neaktivním segmentu StackSwitcheru (Správa napájení otevřená hledáním v Nastavení)
+    Scene("kbd-focus-switcher", "gallery3", ["controls"], "Galerie headerbar: fokus z klávesnice na neaktivním segmentu StackSwitcheru",
+          ["python3", os.path.join(TOOLS, "gallery3.py"), "--page", "headerbar", "--kbd-focus", "switcher"], maxwin=True, pre=300, settle=2800),
 ]
 
 

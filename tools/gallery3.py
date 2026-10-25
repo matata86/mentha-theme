@@ -687,6 +687,8 @@ def page_headerbar(win):
                 stack.add_titled(Gtk.Label(label=n), n, n)
             sw = Gtk.StackSwitcher()
             sw.set_stack(stack)
+            if not backdrop:
+                kbd("switcher", sw.get_children()[1])   # neaktivní segment (Správa napájení: fokus na 1. kartě, aktivní jiná)
             h.set_custom_title(sw)
             h.pack_start(icon_btn("go-previous-symbolic"))
             sb = Gtk.ToggleButton()
@@ -1058,7 +1060,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--page", required=True)
     # skutečný fokus z klávesnice (viditelný outline) na prvním prvku sloupce FOCUS; bez flagu žádný
-    ap.add_argument("--kbd-focus", choices=("check", "radio", "scale", "switch", "button", "suggested", "linked", "pathbar", "entry", "combo", "spin", "textview"))
+    ap.add_argument("--kbd-focus", choices=("check", "radio", "scale", "switch", "button", "suggested", "linked", "pathbar", "entry", "combo", "spin", "textview", "switcher"))
     a = ap.parse_args()
     if a.page.startswith("dlg-"):
         win = dialog_page(a.page)

@@ -1,7 +1,7 @@
 // =============================================================================
 // Mentha: vrstva nad Orchisem (GTK3 i GTK4). Kompiluje se per varianta, barvy
 // jen z tokenů přes mt(). Vyžaduje $variant, $gtk (3|4), Orchisovy proměnné.
-// Pravidla: gradient jen na level/progress/scale; focus = accent; akcent
+// Pravidla: gradient jen na level/progress/scale; fokus ovladačů neutrální (pole akcent); akcent
 // se nikdy nepíše natvrdo. Font se nenutí (Inter z nastavení systému).
 // =============================================================================
 
@@ -12,7 +12,10 @@ $mt-ring-field:       inset 0 0 0 1px mt(border_strong);    // hrana textových 
 $mt-text-sel:         mix(mt(accent), mt(surface), 33%);    // vybraný text v label/textview a v EelEditableLabel
 $mt-text-sel-entry:   mix(mt(accent), mt(surface_alt), 34%); // vybraný text v entry (podklad surface_alt; validace 1,5:1 + fg 4,5:1)
 @mixin mt-ol($r) { @if $gtk == 3 { -gtk-outline-radius: $r; } }   // GTK4 outline sleduje border-radius
-$mt-outline:          2px solid mt(focus);
+// fokus z klávesnice u tlačítek a ovladačů: 1px neutrální, ne akcent. GTK3 po jakékoli klávese v okně (gtkmain.c, např. hledání
+// v Nastavení) nechá fokus viditelný napořád, modrý rámeček pak visel na výchozím tlačítku či segmentu, i když uživatel klikal myší.
+// Vnitřní varianta s offsetem -1px leží přesně na 1px hraně ovladače (stejně jako fokus v messagedialogu).
+$mt-outline:          1px solid mt(fg_muted);
 $mt-sidebar-hover:    mt(sidebar_hover);                  // hover v sidebarech: neutrální, zřetelně slabší než výběr (kontrola v gtk-validate)                   // klávesnicový fokus: GTK3 kreslí outline jen při viditelném fokusu (ne po kliknutí myší)
 
 // -----------------------------------------------------------------------------
@@ -172,7 +175,7 @@ button {
   &:focus {
     box-shadow: $mt-ring-border;
     outline: $mt-outline;
-    outline-offset: -2px;
+    outline-offset: -1px;
     @include mt-ol(mt-radius(sm));
   }
 
@@ -241,7 +244,7 @@ headerbar button:not(.titlebutton),
   border-radius: mt-radius(sm);
 
   &:hover { background-color: mt(hover); box-shadow: none; }
-  &:focus { box-shadow: none; outline: $mt-outline; outline-offset: -2px; @include mt-ol(mt-radius(sm)); }
+  &:focus { box-shadow: none; outline: $mt-outline; outline-offset: -1px; @include mt-ol(mt-radius(sm)); }
   &:active { background-color: mt(active); box-shadow: none; }
   &:disabled { background-color: transparent; box-shadow: none; }
   &:checked {
@@ -415,7 +418,7 @@ $mt-combo-strong: unquote("combobox > box > button.combo:only-child:not(.suggest
   font-size: inherit;
 
   &:hover { background-color: mt(hover); box-shadow: $mt-ring-border; }
-  &:focus { box-shadow: $mt-ring-border; outline: $mt-outline; outline-offset: -2px; @include mt-ol(mt-radius(sm)); }
+  &:focus { box-shadow: $mt-ring-border; outline: $mt-outline; outline-offset: -1px; @include mt-ol(mt-radius(sm)); }
   &:checked { background-color: mt(active); box-shadow: $mt-ring-border; color: mt(fg); }
   &:disabled { background-color: transparent; box-shadow: inset 0 0 0 1px mt(hairline); color: mt(fg_disabled); }
 }
@@ -603,10 +606,10 @@ switch {
     color: mt(fg);
   }
 
-  // fokus: GtkSwitch (3.24) outline nekreslí (render vrací FALSE), proto prstenec box-shadow 2 px
+  // fokus: GtkSwitch (3.24) outline nekreslí (render vrací FALSE), proto prstenec box-shadow 1 px (neutrální jako $mt-outline)
   // s mezerou 2 px barvy surface (GTK3 vrství stíny obráceně: první v seznamu je dole). Klik myší switch nefokusuje (ověřeno), takže je to fokus jen z klávesnice.
   @if $gtk == 3 {
-    &:focus, &:checked:focus { box-shadow: 0 0 0 4px mt(focus), 0 0 0 2px mt(surface); outline: none; }
+    &:focus, &:checked:focus { box-shadow: 0 0 0 3px mt(fg_muted), 0 0 0 2px mt(surface); outline: none; }
   } @else {
     &:focus-visible { box-shadow: none; outline: $mt-outline; outline-offset: 2px; }
   }
