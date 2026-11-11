@@ -1549,8 +1549,10 @@ dialog .sidebar row {
   background-repeat: no-repeat;
   color: mt(fg_muted);
 }
-// GtkPathBar (dialog souborů): aktuální drobek chevron nemá, bývá poslední. Border zůstává, layout se při změně stavu nemění.
-.path-bar.linked:not(.vertical) > button.toggle:not(.slider-button):checked { background-image: none; }
+// GtkPathBar (dialog souborů): chevron nemá jen POSLEDNÍ drobek, ne aktuální (:checked). Po kliknutí o úroveň výš
+// zůstávají hlubší drobky (historie), aktuální pak není poslední. Pořadí CSS uzlů: « slider, drobky od kořene, » slider,
+// poslední drobek je tedy nth-last-child(2). Border zůstává, layout se při změně stavu nemění.
+.path-bar.linked:not(.vertical) > button.toggle:not(.slider-button):nth-last-child(2) { background-image: none; }
 // Nemo: oddělovač › leží VLEVO od drobku. Pozice drobku v GTK3 zastarává: NemoPathBar přepisuje get_path_for_child
 // (sourozenci = jen viditelné uzly [« slider, drobky, » slider]), cesta se ale uloží při přepočtu stylu a platí
 // až do dalšího (hover, fokus okna). Posun, skrytí ani child_ordering_changed (gtk_style_context_invalidate) styl
